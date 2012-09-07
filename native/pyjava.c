@@ -8,9 +8,14 @@
 #include <dlfcn.h>
 #endif
 
+#include "javawrapper.h"
+
 JNIEnv *penv = NULL;
 
 typedef jint (JNICALL *type_JNI_CreateJavaVM)(JavaVM**, void**, JavaVMInitArgs*);
+
+PyObject *Err_Base;
+PyObject *Err_ClassNotFound;
 
 /**
  * Starts a JVM using the invocation API.
@@ -45,7 +50,6 @@ static JNIEnv *start_jvm(const char *path, const char **opts, size_t nbopts)
                 return NULL;
             }
             dyn_JNI_CreateJavaVM = (type_JNI_CreateJavaVM)GetProcAddress(jvm_dll, "JNI_CreateJavaVM");
-            fprintf(stderr, "dyn_JNI_CreateJavaVM = %p\n", dyn_JNI_CreateJavaVM);
             if(dyn_JNI_CreateJavaVM == NULL)
             {
                 FreeLibrary(jvm_dll);
@@ -80,10 +84,9 @@ static JNIEnv *start_jvm(const char *path, const char **opts, size_t nbopts)
         /* Create the Java VM */
         fprintf(stderr, "JNI_CreateJavaVM(<%d options>)\n", nbopts);
         res = dyn_JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
-        fprintf(stderr, "res = %d\nenv = %p\n", res, env);
+        fprintf(stderr, "res = %d\nenv = 0x%p\n", res, env);
 
         free(options);
-        fprintf(stderr, "Still alive 3\n");
     }
     #else
     #error "JNI 1.1 is not supported"
@@ -103,15 +106,10 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
     const char **option_array;
     size_t i;
 
-    fprintf(stderr, "pyjava_start()\n");
-
     if(!(PyArg_ParseTuple(args, "sO!", &path, &PyList_Type, &options)))
         return NULL;
 
-    fprintf(stderr, "read parameters\n");
-
     size = PyList_GET_SIZE(options);
-    fprintf(stderr, "  size = %u\n", size);
     option_array = malloc(size * sizeof(char *));
     for(i = 0; i < size; ++i)
     {
@@ -126,13 +124,10 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
         }
 
         option_array[i] = PyString_AS_STRING(option);
-        fprintf(stderr, "  options[%d] = %s\n", i, option_array[i]);
     }
 
     penv = start_jvm(path, option_array, size);
-    fprintf(stderr, "Still alive 1\n");
     free(option_array);
-    fprintf(stderr, "Still alive 2\n");
 
     if(penv != NULL)
     {
@@ -146,6 +141,35 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
     }
 }
 
+/**
+ * _pyjava.getclass function: get a wrapper for a Java class.
+ */
+static PyObject *pyjava_getclass(PyObject *self, PyObject *args)
+{
+    const char *classname;
+    jclass javaclass;
+
+    if(!(PyArg_ParseTuple(args, "s", &classname)))
+        return NULL;
+
+    if(penv == NULL)
+    {
+        PyErr_SetString(
+                Err_Base,
+                "Java VM is not running.");
+        return NULL;
+    }
+
+    javaclass = (*penv)->FindClass(penv, classname);
+    if(javaclass == NULL)
+    {
+        PyErr_SetString(Err_ClassNotFound, classname);
+        return NULL;
+    }
+
+    return javawrapper_build(javaclass);
+}
+
 static PyMethodDef methods[] = {
     {"start",  pyjava_start, METH_VARARGS,
     "start(bytestring, list) -> bool\n"
@@ -153,6 +177,10 @@ static PyMethodDef methods[] = {
     "Starts a Java Virtual Machine. The first argument is the path of the\n"
     "library to be dynamically loaded. The second is a list of strings that\n"
     "are passed to the JVM as options."},
+    {"getclass",  pyjava_getclass, METH_VARARGS,
+    "getclass(str) -> JavaClass\n"
+    "\n"
+    "Find the desired class and returns a wrapper."},
     {NULL, NULL, 0, NULL}
 };
 
@@ -163,4 +191,14 @@ PyMODINIT_FUNC init_pyjava(void)
     mod = Py_InitModule("_pyjava", methods);
     if(mod == NULL)
         return ;
+
+    Err_Base = PyErr_NewException("pyjava.Error", NULL, NULL);
+    Py_INCREF(Err_Base);
+    PyModule_AddObject(mod, "Error", Err_Base);
+
+    Err_ClassNotFound = PyErr_NewException("pyjava.ClassNotFound", Err_ClassNotFound, NULL);
+    Py_INCREF(Err_ClassNotFound);
+    PyModule_AddObject(mod, "ClassNotFound", Err_ClassNotFound);
+
+    javawrapper_init(mod);
 }
