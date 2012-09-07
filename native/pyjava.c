@@ -2,10 +2,20 @@
 #include <jni.h>
 #include <stdio.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
 JNIEnv *penv = NULL;
+
+typedef jint (JNICALL *type_JNI_CreateJavaVM)(JavaVM**, void**, JavaVMInitArgs*);
 
 /**
  * Starts a JVM using the invocation API.
+ *
+ * The Java DLL is loaded dynamically from the specified path.
  *
  * @param path Path to the JVM DLL, to be passed to JNI_CreateJavaVM().
  * @param options The option strings to pass to the JVM.
@@ -15,11 +25,52 @@ static JNIEnv *start_jvm(const char *path, const char **opts, size_t nbopts)
 {
     JavaVM *jvm = NULL;
     jint res;
+    JNIEnv *env;
+
     #ifdef JNI_VERSION_1_2
     {
         size_t i;
         JavaVMInitArgs vm_args;
+        type_JNI_CreateJavaVM dyn_JNI_CreateJavaVM;
         JavaVMOption *options = malloc(nbopts * sizeof(JavaVMOption));
+
+        #if defined(_WIN32) || defined(_WIN64)
+        {
+            HINSTANCE jvm_dll;
+            fprintf(stderr, "Loading jvm.dll\n");
+            jvm_dll = LoadLibrary(path);
+            if(jvm_dll == NULL)
+            {
+                free(options);
+                return NULL;
+            }
+            dyn_JNI_CreateJavaVM = (type_JNI_CreateJavaVM)GetProcAddress(jvm_dll, "JNI_CreateJavaVM");
+            fprintf(stderr, "dyn_JNI_CreateJavaVM = %p\n", dyn_JNI_CreateJavaVM);
+            if(dyn_JNI_CreateJavaVM == NULL)
+            {
+                FreeLibrary(jvm_dll);
+                free(options);
+                return NULL;
+            }
+        }
+        #else
+        {
+            void *jvm_dll = dlopen(path, RTLD_LAZY);
+            if(jvm_dll == NULL)
+            {
+                free(options);
+                return NULL;
+            }
+            dyn_JNI_CreateJavaVM = dlsym(jvm_dll, "JNI_CreateJavaVM");
+            if(dyn_JNI_CreateJavaVM == NULL)
+            {
+                dlclose(jvm_dll);
+                free(options);
+                return NULL;
+            }
+        }
+        #endif
+
         for(i = 0; i < nbopts; ++i)
             options[i].optionString = opts[i];
         vm_args.version = 0x00010002;
@@ -27,19 +78,23 @@ static JNIEnv *start_jvm(const char *path, const char **opts, size_t nbopts)
         vm_args.nOptions = nbopts;
         vm_args.ignoreUnrecognized = JNI_TRUE;
         /* Create the Java VM */
-        /* TODO : Load jvm.dll dynamically */
-        printf("JNI_CreateJavaVM(<%d options>)\n", nbopts);
-        res = JNI_CreateJavaVM(&jvm, (void**)&penv, &vm_args);
+        fprintf(stderr, "JNI_CreateJavaVM(<%d options>)\n", nbopts);
+        res = dyn_JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
+        fprintf(stderr, "res = %d\nenv = %p\n", res, env);
+
         free(options);
+        fprintf(stderr, "Still alive 3\n");
     }
     #else
-        /* Unsupported */
-        return NULL;
+    #error "JNI 1.1 is not supported"
     #endif
 
-    return (res >= 0)?penv:NULL;
+    return (res >= 0)?env:NULL;
 }
 
+/**
+ * _pyjava.start function: dynamically load a JVM DLL and start it.
+ */
 static PyObject *pyjava_start(PyObject *self, PyObject *args)
 {
     const char *path;
@@ -48,15 +103,15 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
     const char **option_array;
     size_t i;
 
-    printf("pyjava_start()\n");
+    fprintf(stderr, "pyjava_start()\n");
 
     if(!(PyArg_ParseTuple(args, "sO!", &path, &PyList_Type, &options)))
         return NULL;
 
-    printf("read parameters\n");
+    fprintf(stderr, "read parameters\n");
 
     size = PyList_GET_SIZE(options);
-    printf("  size = %u\n", size);
+    fprintf(stderr, "  size = %u\n", size);
     option_array = malloc(size * sizeof(char *));
     for(i = 0; i < size; ++i)
     {
@@ -71,11 +126,13 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
         }
 
         option_array[i] = PyString_AS_STRING(option);
-        printf("  options[%d] = %s\n", i, option_array[i]);
+        fprintf(stderr, "  options[%d] = %s\n", i, option_array[i]);
     }
 
     penv = start_jvm(path, option_array, size);
+    fprintf(stderr, "Still alive 1\n");
     free(option_array);
+    fprintf(stderr, "Still alive 2\n");
 
     if(penv != NULL)
     {
@@ -90,7 +147,12 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef methods[] = {
-    {"start",  pyjava_start, METH_VARARGS, "Starts a Java Virtual Machine"},
+    {"start",  pyjava_start, METH_VARARGS,
+    "start(bytestring, list) -> bool\n"
+    "\n"
+    "Starts a Java Virtual Machine. The first argument is the path of the\n"
+    "library to be dynamically loaded. The second is a list of strings that\n"
+    "are passed to the JVM as options."},
     {NULL, NULL, 0, NULL}
 };
 
