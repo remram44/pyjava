@@ -1,5 +1,4 @@
-#include <Python.h>
-#include <jni.h>
+#include "javawrapper.h"
 
 
 /*==============================================================================
@@ -18,7 +17,20 @@ typedef struct {
     char name[1];
 } JavaMethod;
 
+static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
+{
+    /* TODO */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyMethodDef JavaMethod_methods[] = {
+    {"call", (PyCFunction)JavaMethod_call, METH_VARARGS,
+    "call(*args) -> [object]\n"
+    "\n"
+    "Calls the Java method. Which overload gets called depends on the type\n"
+    "of the parameters."
+    },
     {NULL}  /* Sentinel */
 };
 
@@ -44,24 +56,24 @@ static PyTypeObject JavaMethod_type = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Java method wrapper",     /* tp_doc */
-    0,                         /* tp_traverse */
-    0,                         /* tp_clear */
-    0,                         /* tp_richcompare */
-    0,                         /* tp_weaklistoffset */
-    0,                         /* tp_iter */
-    0,                         /* tp_iternext */
-    JavaMethod_methods,        /* tp_methods */
-    0,                         /* tp_members */
-    0,                         /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
-    0,                         /* tp_init */
-    0,                         /* tp_alloc */
-    PyType_GenericNew,         /* tp_new */
+    "Java method wrapper",     /*tp_doc*/
+    0,                         /*tp_traverse*/
+    0,                         /*tp_clear*/
+    0,                         /*tp_richcompare*/
+    0,                         /*tp_weaklistoffset*/
+    0,                         /*tp_iter*/
+    0,                         /*tp_iternext*/
+    JavaMethod_methods,        /*tp_methods*/
+    0,                         /*tp_members*/
+    0,                         /*tp_getset*/
+    0,                         /*tp_base*/
+    0,                         /*tp_dict*/
+    0,                         /*tp_descr_get*/
+    0,                         /*tp_descr_set*/
+    0,                         /*tp_dictoffset*/
+    0,                         /*tp_init*/
+    0,                         /*tp_alloc*/
+    PyType_GenericNew,         /*tp_new*/
 };
 
 
@@ -128,24 +140,24 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Java class wrapper",      /* tp_doc */
-    0,                         /* tp_traverse */
-    0,                         /* tp_clear */
-    0,                         /* tp_richcompare */
-    0,                         /* tp_weaklistoffset */
-    0,                         /* tp_iter */
-    0,                         /* tp_iternext */
-    JavaClass_methods,         /* tp_methods */
-    0,                         /* tp_members */
-    0,                         /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
-    0,                         /* tp_init */
-    0,                         /* tp_alloc */
-    PyType_GenericNew,         /* tp_new */
+    "Java class wrapper",      /*tp_doc*/
+    0,                         /*tp_traverse*/
+    0,                         /*tp_clear*/
+    0,                         /*tp_richcompare*/
+    0,                         /*tp_weaklistoffset*/
+    0,                         /*tp_iter*/
+    0,                         /*tp_iternext*/
+    JavaClass_methods,         /*tp_methods*/
+    0,                         /*tp_members*/
+    0,                         /*tp_getset*/
+    0,                         /*tp_base*/
+    0,                         /*tp_dict*/
+    0,                         /*tp_descr_get*/
+    0,                         /*tp_descr_set*/
+    0,                         /*tp_dictoffset*/
+    0,                         /*tp_init*/
+    0,                         /*tp_alloc*/
+    PyType_GenericNew,         /*tp_new*/
 };
 
 
