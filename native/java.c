@@ -82,3 +82,24 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
 
     return (res >= 0)?env:NULL;
 }
+
+java_Methods *java_list_overloads(jclass javaclass, const char *method,
+                                  size_t nbargs)
+{
+    /* TODO : list all the methods with that name and that number of
+     * arguments */
+    return NULL;
+}
+
+void java_free_methods(java_Methods *methods)
+{
+    size_t i;
+    for(i = 0; i < methods->nb_methods; ++i)
+    {
+        size_t j;
+        for(j = 0; j < methods->methods[i].nb_args; ++j)
+            free(methods->methods[i].args[j]);
+        free(methods->methods[i].args);
+    }
+    free(methods);
+}

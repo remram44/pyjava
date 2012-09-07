@@ -17,4 +17,20 @@ extern JNIEnv *penv;
  */
 JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts);
 
+typedef struct _java_Method {
+    jmethodID id;
+    size_t nb_args;
+    const char **args;
+} java_Method;
+
+typedef struct _java_Methods {
+    size_t nb_methods;
+    java_Method methods[1];
+} java_Methods;
+
+java_Methods *java_list_overloads(jclass javaclass, const char *method,
+                                  size_t nb_args);
+
+void java_free_methods(java_Methods *methods);
+
 #endif

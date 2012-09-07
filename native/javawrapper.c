@@ -19,7 +19,26 @@ typedef struct {
 
 static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
 {
-    /* TODO */
+    size_t nbargs;
+    size_t nb_methods;
+    java_Methods *methods;
+
+    nbargs = PyTuple_Size(args);
+
+    /* Find the methods of that class with that name and that number of
+     * parameters */
+    methods = java_list_overloads(self->javaclass, self->name, nbargs);
+    if(methods == NULL)
+    {
+        PyErr_SetString(
+                PyExc_AttributeError,
+                self->name);
+        return NULL;
+    }
+
+    java_free_methods(methods);
+
+    /* TODO : Find the correct overload */
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -169,9 +188,6 @@ static PyTypeObject JavaClass_type = {
  * javawrapper_build() is called by pyjava_getclass() to obtain a wrapper.
  */
 
-/**
- * Initialize the module (creates the types).
- */
 void javawrapper_init(PyObject *mod)
 {
     if(PyType_Ready(&JavaClass_type) < 0)
@@ -183,9 +199,6 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaMethod_type);
 }
 
-/**
- * Build a Python wrapper for a Java class.
- */
 PyObject *javawrapper_build(jclass javaclass)
 {
     JavaClass* wrapper = PyObject_New(JavaClass, &JavaClass_type);
