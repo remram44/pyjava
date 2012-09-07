@@ -1,6 +1,14 @@
 #include <Python.h>
 #include <jni.h>
 
+
+/*==============================================================================
+ * JavaClass type.
+ *
+ * This is the wrapper returned by _pyjava.getclass(). It contains the jclass
+ * and a getmethod() method that returns a wrapper for a specific method.
+ */
+
 typedef struct {
     PyObject_HEAD
     jclass javaclass;
@@ -15,7 +23,11 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
 
 static PyMethodDef JavaClass_methods[] = {
     {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
-     "Returns a wrapper for a Java method."
+    "getmethod(str) -> JavaMethod\n"
+    "\n"
+    "Returns a wrapper for a Java method.\n"
+    "The actual method with this name to call is chosen at call time, from\n"
+    "the type of the parameters."
     },
     {NULL}  /* Sentinel */
 };
@@ -61,6 +73,28 @@ static PyTypeObject JavaClass_type = {
     0,                         /* tp_alloc */
     PyType_GenericNew,         /* tp_new */
 };
+
+
+/*==============================================================================
+ * JavaMethod type.
+ *
+ * This is the wrapper returned by JavaClass.getmethod(). It contains the
+ * jclass and the name of the method.
+ * There is no jmethodID here because this object wraps all the Java methods
+ * with the same name, and the actual decision will occur when the call is
+ * made (and the parameter types are known).
+ */
+
+/* TODO */
+
+
+/*==============================================================================
+ * Public functions of javawrapper.
+ *
+ * javawrapper_init() is called by pyjava_start() to create the types.
+ *
+ * javawrapper_build() is called by pyjava_getclass() to obtain a wrapper.
+ */
 
 /**
  * Initialize the module (creates the JavaClass type).
