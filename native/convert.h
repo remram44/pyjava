@@ -23,7 +23,7 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype);
  *
  * See convert_check_py2jav() for what is acceptable.
  */
-jobject convert_py2jav(PyObject *pyobj, jclass javatype);
+void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue);
 
 
 /**

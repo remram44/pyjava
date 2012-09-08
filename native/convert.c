@@ -5,9 +5,8 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
     return 1;
 }
 
-jobject convert_py2jav(PyObject *pyobj, jclass javatype)
+void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
 {
-    return NULL;
 }
 
 PyObject *convert_jav2py(jobject javaobj)

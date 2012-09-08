@@ -1,5 +1,6 @@
 #include "javawrapper.h"
 
+#include "convert.h"
 #include "pyjava.h"
 
 
@@ -22,10 +23,9 @@ typedef struct {
 static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
 {
     size_t nbargs;
-    size_t nb_methods;
     java_Methods *methods;
     size_t i;
-    jmethodID matching_method = NULL;
+    int matching_method = -1;
     int nb_matches = 1;
 
     nbargs = PyTuple_Size(args);
@@ -41,17 +41,16 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         return NULL;
     }
 
-    nb_methods = methods->nb_methods;
-
     /* TODO : Find the correct overload */
-    for(i = 0; i < nb_methods; ++i)
+    for(i = 0; i < methods->nb_methods; ++i)
     {
         /* Attempt to match the arguments with the ones we got from Python. */
         size_t a;
         char matches = 1;
-        for(a = 0; a < methods->methods[i].nb_args; ++a)
+        java_Method *m = &methods->methods[i];
+        for(a = 0; a < m->nb_args; ++a)
         {
-            jclass javatype = methods->methods[i].args[a];
+            jclass javatype = m->args[a];
             PyObject *pyarg = PyTuple_GET_ITEM(args, a);
             if(!convert_check_py2jav(pyarg, javatype))
             {
@@ -62,14 +61,12 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
 
         if(matches)
         {
-            if(matching_method == NULL)
-                matching_method = methods->methods[i].id;
+            if(matching_method == -1)
+                matching_method = i;
             else
                 nb_matches++;
         }
     }
-
-    java_free_methods(methods);
 
     /*
      * Several methods matched the given arguments. We'll use the first method
@@ -77,20 +74,40 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
      * the convert module?
      */
     if(nb_matches > 1)
-        PyErr_WarnEx(
+        PyErr_Warn(
                 PyExc_RuntimeWarning,
-                "Multiple Java methods matching Python parameters", 2);
+                "Multiple Java methods matching Python parameters");
 
-    if(matching_method == NULL)
+    if(matching_method == -1)
     {
         PyErr_Format(
                 Err_NoMatchingMethod,
                 "%d methods \"%s\" with %d parameters (no match)\n",
-                nb_methods, self->name, nbargs);
+                methods->nb_methods, self->name, nbargs);
         return NULL;
     }
 
-    /* TODO : convert all the parameters and call */
+    jvalue *java_parameters = malloc(sizeof(jvalue) * nbargs);
+    java_Method *m = &methods->methods[matching_method];
+    for(i = 0; i < nbargs; ++i)
+        convert_py2jav(
+                PyTuple_GET_ITEM(args, i),
+                m->args[i],
+                &java_parameters[i]);
+
+    if(m->is_static)
+        (*penv)->CallStaticObjectMethodA(
+                penv,
+                self->javaclass, m->id,
+                java_parameters);
+    else
+        (*penv)->CallObjectMethodA(
+                penv,
+                java_parameters[0].l, m->id,
+                java_parameters+1);
+
+    free(java_parameters);
+    java_free_methods(methods);
 
     /* TODO : convert the return type */
 
