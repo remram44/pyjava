@@ -89,6 +89,11 @@ static jmethodID meth_Method_getParameterTypes;
         /* java.lang.reflect.Method.getParameterTypes */
 static jmethodID meth_Method_getName;
         /* java.lang.reflect.Method.getName */
+static jmethodID meth_Method_getModifiers;
+        /* java.lang.reflect.Method.getModifiers */
+static jclass class_Modifier; /* java.lang.reflect.Modifier */
+static jmethodID meth_Modifier_isStatic;
+        /* java.lang.reflect.Modifier.isStatic */
 
 java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                                   size_t nb_args)
@@ -120,6 +125,17 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                 penv,
                 class_Method, "getName",
                 "()Ljava/lang/String;");
+        meth_Method_getModifiers = (*penv)->GetMethodID(
+                penv,
+                class_Method, "getModifiers",
+                "()I");
+
+        class_Modifier = (*penv)->FindClass(
+                penv, "java/lang/reflect/Modifier");
+        meth_Modifier_isStatic = (*penv)->GetStaticMethodID(
+                penv,
+                class_Modifier, "isStatic",
+                "(I)Z");
     }
 
     /* Method[] method_array = javaclass.getMethods() */
@@ -136,8 +152,11 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
 
     for(i = 0; i < nb_methods; ++i)
     {
-        size_t c, j;
+        size_t j;
+        char is_static;
         jobject parameter_types;
+        size_t py_nb_args;
+        java_Method *m;
 
         /* Method method = method_array[i] */
         jobject method = (*penv)->GetObjectArrayElement(
@@ -158,23 +177,59 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                 continue;
         }
 
+        /*
+         * Is the method static ?
+         * If not, we'll add a first parameter of this class's type.
+         */
+        {
+            jint modifiers = (*penv)->CallIntMethod(
+                    penv,
+                    javaclass, meth_Method_getModifiers);
+            is_static = (*penv)->CallStaticBooleanMethod(
+                    penv,
+                    class_Modifier, meth_Modifier_isStatic,
+                    modifiers) == JNI_TRUE;
+        }
+
         /* Class[] parameter_types = method.getParameterTypes() */
         parameter_types = (*penv)->CallObjectMethod(
                 penv,
                 method, meth_Method_getParameterTypes);
 
-        if((*penv)->GetArrayLength(penv, parameter_types) != nb_args)
-            continue;
+        {
+            size_t real_args = (*penv)->GetArrayLength(penv, parameter_types);
+            if(!is_static)
+                real_args++;
+            if(real_args != nb_args)
+                continue;
+        }
 
-        c = methods->nb_methods;
-        methods->methods[c].id = (*penv)->FromReflectedMethod(
+        if(is_static)
+            py_nb_args = nb_args;
+        else
+            py_nb_args = nb_args + 1;
+
+        m = &methods->methods[methods->nb_methods];
+        m->id = (*penv)->FromReflectedMethod(
                 penv, method);
-        methods->methods[c].nb_args = nb_args;
-        methods->methods[c].args = malloc(sizeof(jclass) * nb_args);
-        for(j = 0; j < nb_args; ++j)
-            methods->methods[c].args[j] = (*penv)->GetObjectArrayElement(
-                    penv,
-                    parameter_types, j);
+        m->is_static = is_static;
+        m->nb_args = py_nb_args;
+        m->args = malloc(sizeof(jclass) * py_nb_args);
+        if(is_static)
+        {
+            for(j = 0; j < nb_args; ++j)
+                m->args[j] = (*penv)->GetObjectArrayElement(
+                        penv,
+                        parameter_types, j);
+        }
+        else
+        {
+            m->args[0] = javaclass;
+            for(j = 0; j < nb_args; ++j)
+                m->args[j+1] = (*penv)->GetObjectArrayElement(
+                        penv,
+                        parameter_types, j);
+        }
         methods->nb_methods++;
     }
 
