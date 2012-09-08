@@ -1,5 +1,7 @@
 #include "javawrapper.h"
 
+#include "pyjava.h"
+
 
 /*==============================================================================
  * JavaMethod type.
@@ -22,6 +24,9 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
     size_t nbargs;
     size_t nb_methods;
     java_Methods *methods;
+    size_t i;
+    jmethodID matching_method = NULL;
+    int nb_matches = 1;
 
     nbargs = PyTuple_Size(args);
 
@@ -36,9 +41,59 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         return NULL;
     }
 
-    java_free_methods(methods);
+    nb_methods = methods->nb_methods;
 
     /* TODO : Find the correct overload */
+    for(i = 0; i < nb_methods; ++i)
+    {
+        /* Attempt to match the arguments with the ones we got from Python. */
+        size_t a;
+        char matches = 1;
+        for(a = 0; a < methods->methods[i].nb_args; ++a)
+        {
+            jclass javatype = methods->methods[i].args[a];
+            PyObject *pyarg = PyTuple_GET_ITEM(args, a);
+            if(!convert_check_py2jav(pyarg, javatype))
+            {
+                matches = 0;
+                break;
+            }
+        }
+
+        if(matches)
+        {
+            if(matching_method == NULL)
+                matching_method = methods->methods[i].id;
+            else
+                nb_matches++;
+        }
+    }
+
+    java_free_methods(methods);
+
+    /*
+     * Several methods matched the given arguments. We'll use the first method
+     * we found The Java compiler shouldn't let this happen... may be a bug in
+     * the convert module?
+     */
+    if(nb_matches > 1)
+        PyErr_WarnEx(
+                PyExc_RuntimeWarning,
+                "Multiple Java methods matching Python parameters", 2);
+
+    if(matching_method == NULL)
+    {
+        PyErr_Format(
+                Err_NoMatchingMethod,
+                "%d methods \"%s\" with %d parameters (no match)\n",
+                nb_methods, self->name, nbargs);
+        return NULL;
+    }
+
+    /* TODO : convert all the parameters and call */
+
+    /* TODO : convert the return type */
+
     Py_INCREF(Py_None);
     return Py_None;
 }

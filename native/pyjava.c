@@ -1,4 +1,4 @@
-#include <Python.h>
+#include "pyjava.h"
 
 #include "java.h"
 #include "javawrapper.h"
@@ -6,6 +6,7 @@
 
 PyObject *Err_Base;
 PyObject *Err_ClassNotFound;
+PyObject *Err_NoMatchingMethod;
 
 /**
  * _pyjava.start function: dynamically load a JVM DLL and start it.
@@ -108,9 +109,15 @@ PyMODINIT_FUNC init_pyjava(void)
     Py_INCREF(Err_Base);
     PyModule_AddObject(mod, "Error", Err_Base);
 
-    Err_ClassNotFound = PyErr_NewException("pyjava.ClassNotFound", Err_ClassNotFound, NULL);
+    Err_ClassNotFound = PyErr_NewException(
+            "pyjava.ClassNotFound", Err_ClassNotFound, NULL);
     Py_INCREF(Err_ClassNotFound);
     PyModule_AddObject(mod, "ClassNotFound", Err_ClassNotFound);
+
+    Err_NoMatchingMethod = PyErr_NewException(
+            "pyjava.NoMatchingMethod", Err_NoMatchingMethod, NULL);
+    Py_INCREF(Err_NoMatchingMethod);
+    PyModule_AddObject(mod, "NoMatchingMethod", Err_NoMatchingMethod);
 
     javawrapper_init(mod);
 }

@@ -5,7 +5,7 @@ jdk = 'C:\\Program Files (x86)\\Java\\jdk1.6.0_35'
 
 pyjava = Extension('_pyjava',
                    sources=['native/pyjava.c', 'native/javawrapper.c',
-                            'native/java.c'],
+                            'native/java.c', 'native/convert.c'],
                    include_dirs=[os.path.join(jdk, 'include'),
                                  os.path.join(jdk, 'include', 'win32')])
 
