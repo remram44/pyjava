@@ -202,6 +202,7 @@ void javawrapper_init(PyObject *mod)
 PyObject *javawrapper_build(jclass javaclass)
 {
     JavaClass* wrapper = PyObject_New(JavaClass, &JavaClass_type);
+    wrapper->javaclass = javaclass;
 
     return (PyObject*)wrapper;
 }

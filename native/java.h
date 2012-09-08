@@ -20,7 +20,7 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts);
 typedef struct _java_Method {
     jmethodID id;
     size_t nb_args;
-    const char **args;
+    jclass *args;
 } java_Method;
 
 typedef struct _java_Methods {

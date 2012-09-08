@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 import os, os.path
 
-jdk = 'C:\\Program Files (x86)\\Java\\jdk1.6.0_25'
+jdk = 'C:\\Program Files (x86)\\Java\\jdk1.6.0_35'
 
 pyjava = Extension('_pyjava',
                    sources=['native/pyjava.c', 'native/javawrapper.c',
