@@ -126,12 +126,12 @@ PyMODINIT_FUNC init_pyjava(void)
     PyModule_AddObject(mod, "Error", Err_Base);
 
     Err_ClassNotFound = PyErr_NewException(
-            "pyjava.ClassNotFound", Err_ClassNotFound, NULL);
+            "pyjava.ClassNotFound", Err_Base, NULL);
     Py_INCREF(Err_ClassNotFound);
     PyModule_AddObject(mod, "ClassNotFound", Err_ClassNotFound);
 
     Err_NoMatchingMethod = PyErr_NewException(
-            "pyjava.NoMatchingMethod", Err_NoMatchingMethod, NULL);
+            "pyjava.NoMatchingMethod", Err_Base, NULL);
     Py_INCREF(Err_NoMatchingMethod);
     PyModule_AddObject(mod, "NoMatchingMethod", Err_NoMatchingMethod);
 
