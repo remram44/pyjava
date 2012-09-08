@@ -29,6 +29,13 @@ typedef struct _java_Methods {
     java_Method methods[1];
 } java_Methods;
 
+/**
+ * Initialization method.
+ *
+ * To be called AFTER java_start_vm() has succeeded.
+ */
+void java_init(void);
+
 java_Methods *java_list_overloads(jclass javaclass, const char *method,
                                   size_t nb_args);
 

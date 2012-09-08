@@ -6,6 +6,13 @@
 
 
 /**
+ * Initialization method.
+ *
+ * To be called AFTER java_start_vm() has succeeded.
+ */
+void convert_init(void);
+
+/**
  * Indicate whether a given Python object can be implicitely converted (or
  * wrapped) as a Java object as the given type.
  *

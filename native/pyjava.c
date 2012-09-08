@@ -1,5 +1,6 @@
 #include "pyjava.h"
 
+#include "convert.h"
 #include "java.h"
 #include "javawrapper.h"
 
@@ -21,6 +22,14 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
 
     if(!(PyArg_ParseTuple(args, "sO!", &path, &PyList_Type, &options)))
         return NULL;
+
+    if(penv != NULL)
+    {
+        PyErr_SetString(
+                Err_Base,
+                "Attempt to start() the JVM a second time.");
+        return NULL;
+    }
 
     size = PyList_GET_SIZE(options);
     option_array = malloc(size * sizeof(char *));
@@ -44,6 +53,13 @@ static PyObject *pyjava_start(PyObject *self, PyObject *args)
 
     if(penv != NULL)
     {
+        /*
+         * Initialize the modules dependent on the JVM (load classes and
+         * methods, ...)
+         */
+        java_init();
+        convert_init();
+
         Py_INCREF(Py_True);
         return Py_True;
     }

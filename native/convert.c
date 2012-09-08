@@ -29,9 +29,9 @@ static const char *ptypes_classes[NB_PTYPES] = {
 };
 
 static jmethodID meth_Class_isPrimitive; /* java.lang.Class.isPrimitive */
-static jmethodID meth_Object_equals = NULL; /* java.lang.Object.equals */
+static jmethodID meth_Object_equals; /* java.lang.Object.equals */
 
-static void convert_init(void)
+void convert_init(void)
 {
     jclass class_Class, class_Object;
     size_t i;
@@ -67,12 +67,7 @@ static enum CVT_PType convert_id_type(jclass javatype)
 
 int convert_check_py2jav(PyObject *pyobj, jclass javatype)
 {
-    char primitive;
-
-    if(meth_Object_equals == NULL)
-        convert_init();
-
-    primitive = (*penv)->CallBooleanMethod(
+    char primitive = (*penv)->CallBooleanMethod(
             penv,
             javatype, meth_Class_isPrimitive) == JNI_TRUE;
 

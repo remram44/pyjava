@@ -2,7 +2,7 @@
 #define JAVAWRAPPER_H
 
 #include <Python.h>
-#include "java.h"
+#include <jni.h>
 
 
 /**

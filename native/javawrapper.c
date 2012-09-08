@@ -1,6 +1,7 @@
 #include "javawrapper.h"
 
 #include "convert.h"
+#include "java.h"
 #include "pyjava.h"
 
 
@@ -41,7 +42,6 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         return NULL;
     }
 
-    /* TODO : Find the correct overload */
     for(i = 0; i < methods->nb_methods; ++i)
     {
         /* Attempt to match the arguments with the ones we got from Python. */

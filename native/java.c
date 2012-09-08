@@ -83,7 +83,7 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
     return (res >= 0)?env:NULL;
 }
 
-static jclass class_Class = NULL; /* java.lang.Class */
+static jclass class_Class; /* java.lang.Class */
 static jmethodID meth_Class_getMethods; /* java.lang.Class#getMethods() */
 static jmethodID meth_Method_getParameterTypes;
         /* java.lang.reflect.Method.getParameterTypes */
@@ -95,6 +95,38 @@ static jclass class_Modifier; /* java.lang.reflect.Modifier */
 static jmethodID meth_Modifier_isStatic;
         /* java.lang.reflect.Modifier.isStatic */
 
+void java_init(void)
+{
+    class_Class = (*penv)->FindClass(
+            penv, "java/lang/Class");
+    meth_Class_getMethods = (*penv)->GetMethodID(
+            penv,
+            class_Class, "getMethods",
+            "()[Ljava/lang/reflect/Method;");
+
+    jclass class_Method = (*penv)->FindClass(
+            penv, "java/lang/reflect/Method");
+    meth_Method_getParameterTypes = (*penv)->GetMethodID(
+            penv,
+            class_Method, "getParameterTypes",
+            "()[Ljava/lang/Class;");
+    meth_Method_getName = (*penv)->GetMethodID(
+            penv,
+            class_Method, "getName",
+            "()Ljava/lang/String;");
+    meth_Method_getModifiers = (*penv)->GetMethodID(
+            penv,
+            class_Method, "getModifiers",
+            "()I");
+
+    class_Modifier = (*penv)->FindClass(
+            penv, "java/lang/reflect/Modifier");
+    meth_Modifier_isStatic = (*penv)->GetStaticMethodID(
+            penv,
+            class_Modifier, "isStatic",
+            "(I)Z");
+}
+
 java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                                   size_t nb_args)
 {
@@ -105,38 +137,6 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
 
     fprintf(stderr, "java_list_overloads(0x%p, \"%s\", %u)\n",
             javaclass, methodname, nb_args);
-
-    if(class_Class == NULL)
-    {
-        class_Class = (*penv)->FindClass(
-                penv, "java/lang/Class");
-        meth_Class_getMethods = (*penv)->GetMethodID(
-                penv,
-                class_Class, "getMethods",
-                "()[Ljava/lang/reflect/Method;");
-
-        jclass class_Method = (*penv)->FindClass(
-                penv, "java/lang/reflect/Method");
-        meth_Method_getParameterTypes = (*penv)->GetMethodID(
-                penv,
-                class_Method, "getParameterTypes",
-                "()[Ljava/lang/Class;");
-        meth_Method_getName = (*penv)->GetMethodID(
-                penv,
-                class_Method, "getName",
-                "()Ljava/lang/String;");
-        meth_Method_getModifiers = (*penv)->GetMethodID(
-                penv,
-                class_Method, "getModifiers",
-                "()I");
-
-        class_Modifier = (*penv)->FindClass(
-                penv, "java/lang/reflect/Modifier");
-        meth_Modifier_isStatic = (*penv)->GetStaticMethodID(
-                penv,
-                class_Modifier, "isStatic",
-                "(I)Z");
-    }
 
     /* Method[] method_array = javaclass.getMethods() */
     method_array = (*penv)->CallObjectMethod(
@@ -184,11 +184,11 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
         {
             jint modifiers = (*penv)->CallIntMethod(
                     penv,
-                    javaclass, meth_Method_getModifiers);
+                    method, meth_Method_getModifiers);
             is_static = (*penv)->CallStaticBooleanMethod(
                     penv,
                     class_Modifier, meth_Modifier_isStatic,
-                    modifiers) == JNI_TRUE;
+                    modifiers) != JNI_FALSE;
         }
 
         /* Class[] parameter_types = method.getParameterTypes() */
