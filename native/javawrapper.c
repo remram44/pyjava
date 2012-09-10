@@ -87,32 +87,33 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         return NULL;
     }
 
-    jvalue *java_parameters = malloc(sizeof(jvalue) * nbargs);
-    java_Method *m = &methods->methods[matching_method];
-    for(i = 0; i < nbargs; ++i)
-        convert_py2jav(
-                PyTuple_GET_ITEM(args, i),
-                m->args[i],
-                &java_parameters[i]);
+    {
+        jvalue *java_parameters;
+        PyObject *ret;
+        java_parameters = malloc(sizeof(jvalue) * nbargs);
+        java_Method *m = &methods->methods[matching_method];
+        for(i = 0; i < nbargs; ++i)
+            convert_py2jav(
+                    PyTuple_GET_ITEM(args, i),
+                    m->args[i],
+                    &java_parameters[i]);
 
-    if(m->is_static)
-        (*penv)->CallStaticObjectMethodA(
-                penv,
-                self->javaclass, m->id,
-                java_parameters);
-    else
-        (*penv)->CallObjectMethodA(
-                penv,
-                java_parameters[0].l, m->id,
-                java_parameters+1);
+        if(m->is_static)
+            ret = convert_calljava_static(
+                    self->javaclass, m->id,
+                    java_parameters,
+                    m->returntype);
+        else
+            ret = convert_calljava(
+                    java_parameters[0].l, m->id,
+                    java_parameters+1,
+                    m->returntype);
 
-    free(java_parameters);
-    java_free_methods(methods);
+        free(java_parameters);
+        java_free_methods(methods);
 
-    /* TODO : convert the return type */
-
-    Py_INCREF(Py_None);
-    return Py_None;
+        return ret;
+    }
 }
 
 static PyMethodDef JavaMethod_methods[] = {

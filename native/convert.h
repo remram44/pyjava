@@ -39,6 +39,26 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue);
  * This is always possible as we have no static type to comply to. If the
  * object is a reference to an object, a JavaInstance wrapper will be returned.
  */
-PyObject *convert_jav2py(jobject javaobj);
+PyObject *convert_javobj2py(jobject javaobj);
+
+
+/**
+ * Convert the return value of a Java method as a Python object.
+ *
+ * This function takes the return type as a jclass; it can be an object or a
+ * POD, and the correct Call<type>MethodA() function will be used.
+ */
+PyObject *convert_calljava(jobject self, jmethodID method,
+        jvalue *params, jclass returntype);
+
+
+/**
+ * Convert the return value of a Java static method as a Python object.
+ *
+ * This function takes the return type as a jclass; it can be an object or a
+ * POD, and the correct CallStatic<type>MethodA() function will be used.
+ */
+PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
+        jvalue *params, jclass returntype);
 
 #endif

@@ -4,20 +4,23 @@
 
 #include "java.h"
 
-enum CVT_PType {
-    CVT_BOOLEAN,
-    CVT_BYTE,
-    CVT_CHAR,
-    CVT_SHORT,
-    CVT_INT,
-    CVT_LONG,
-    CVT_FLOAT,
-    CVT_DOUBLE,
-    NB_PTYPES
+enum CVT_JType {
+    CVT_J_BOOLEAN,
+    CVT_J_BYTE,
+    CVT_J_CHAR,
+    CVT_J_SHORT,
+    CVT_J_INT,
+    CVT_J_LONG,
+    CVT_J_FLOAT,
+    CVT_J_DOUBLE,
+    CVT_J_OBJECT
 };
+#define NB_JPTYPES 8
+#define NB_JTYPES 9
+#define JTYPE_PRIMITIVE(t) ((t) != CVT_J_OBJECT)
 
-static jclass ptypes[NB_PTYPES];
-static const char *ptypes_classes[NB_PTYPES] = {
+static jclass jptypes[NB_JPTYPES];
+static const char *jptypes_classes[NB_JPTYPES] = {
     "java/lang/Boolean",
     "java/lang/Byte",
     "java/lang/Character",
@@ -36,6 +39,8 @@ void convert_init(void)
     jclass class_Class, class_Object;
     size_t i;
 
+    fprintf(stderr, "1\n");
+
     class_Class = (*penv)->FindClass(penv, "java/lang/Class");
     meth_Class_isPrimitive = (*penv)->GetMethodID(
             penv, class_Class, "isPrimitive", "()Z");
@@ -43,35 +48,44 @@ void convert_init(void)
     meth_Object_equals = (*penv)->GetMethodID(
             penv, class_Object, "equals", "(Ljava/lang/Object;)Z");
 
-    for(i = 0; i < NB_PTYPES; ++i)
+    for(i = 0; i < NB_JPTYPES; ++i)
     {
-        jclass clasz = (*penv)->FindClass(penv, ptypes_classes[i]);
+        jclass clasz = (*penv)->FindClass(penv, jptypes_classes[i]);
         jfieldID field = (*penv)->GetStaticFieldID(
                 penv, clasz, "TYPE", "Ljava/lang/Class;");
-        ptypes[i] = (*penv)->GetStaticObjectField(penv, clasz, field);
+        jptypes[i] = (*penv)->GetStaticObjectField(penv, clasz, field);
     }
+
+    fprintf(stderr, "2\n");
 }
 
-static enum CVT_PType convert_id_type(jclass javatype)
-{
-    size_t i;
-    for(i = 0; i < NB_PTYPES; ++i)
-    {
-        if((*penv)->CallBooleanMethod(
-                penv,
-                javatype, meth_Object_equals, ptypes[i]) != JNI_FALSE)
-            return i;
-    }
-    assert(0); /* can't happen */
-}
-
-int convert_check_py2jav(PyObject *pyobj, jclass javatype)
+static enum CVT_JType convert_id_type(jclass javatype)
 {
     char primitive = (*penv)->CallBooleanMethod(
             penv,
             javatype, meth_Class_isPrimitive) == JNI_TRUE;
 
     if(primitive)
+    {
+        size_t i;
+        for(i = 0; i < NB_JPTYPES; ++i)
+        {
+            if((*penv)->CallBooleanMethod(
+                    penv,
+                    javatype, meth_Object_equals, jptypes[i]) != JNI_FALSE)
+                return i;
+        }
+        assert(0); /* can't happen */
+    }
+    else
+        return CVT_J_OBJECT;
+}
+
+int convert_check_py2jav(PyObject *pyobj, jclass javatype)
+{
+    enum CVT_JType type = convert_id_type(javatype);
+
+    if(JTYPE_PRIMITIVE(type))
     {
         char long_status;
         if(!PyLong_Check(pyobj))
@@ -86,40 +100,39 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
             else
                 long_status = 1; /* can fit in an int */
         }
-        switch(convert_id_type(javatype))
+        switch(type)
         {
-        case CVT_BOOLEAN:
+        case CVT_J_BOOLEAN:
             /* We don't implicitly cast other types to boolean here */
             return PyBool_Check(pyobj);
-        case CVT_BYTE:
-        {
-            long value;
-            if(!PyInt_Check(pyobj) && long_status != 1)
-                return 0;
-            value = PyInt_AsLong(pyobj);
-            return 0 <= value && value <= 255;
-        }
-        case CVT_CHAR:
-        {
-            if(!PyUnicode_Check(pyobj) && !PyString_Check(pyobj))
-                return 0;
-            return PySequence_Length(pyobj) == 1;
-        }
-        case CVT_SHORT:
-        {
-            long value;
-            if(!PyInt_Check(pyobj) && long_status != 1)
-                return 0;
-            value = PyInt_AsLong(pyobj);
-            return -32768 <= value && value <= 32767;
-        }
-        case CVT_INT:
+        case CVT_J_BYTE:
+            {
+                long value;
+                if(!PyInt_Check(pyobj) && long_status != 1)
+                    return 0;
+                value = PyInt_AsLong(pyobj);
+                return 0 <= value && value <= 255;
+            }
+        case CVT_J_CHAR:
+            {
+                if(!PyUnicode_Check(pyobj) && !PyString_Check(pyobj))
+                    return 0;
+                return PySequence_Length(pyobj) == 1;
+            }
+        case CVT_J_SHORT:
+            {
+                long value;
+                if(!PyInt_Check(pyobj) && long_status != 1)
+                    return 0;
+                value = PyInt_AsLong(pyobj);
+                return -32768 <= value && value <= 32767;
+            }
+        case CVT_J_INT:
             return PyInt_Check(pyobj) || long_status == 1;
-        case CVT_LONG:
-            /* TODO */
-            return 1;
-        case CVT_FLOAT:
-        case CVT_DOUBLE:
+        case CVT_J_LONG:
+            return PyInt_Check(pyobj) || long_status == 1;
+        case CVT_J_FLOAT:
+        case CVT_J_DOUBLE:
             return PyNumber_Check(pyobj);
         default:
             assert(0); /* can't happen */
@@ -127,28 +140,26 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
     }
     else
     {
-        /* TODO */
+        /* TODO : Check that pyobj is a JavaInstance */
         return 0;
     }
 }
 
 void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
 {
-    char primitive = (*penv)->CallBooleanMethod(
-            penv,
-            javatype, meth_Class_isPrimitive) == JNI_TRUE;
+    enum CVT_JType type = convert_id_type(javatype);
 
-    if(primitive)
+    if(JTYPE_PRIMITIVE(type))
     {
-        switch(convert_id_type(javatype))
+        switch(type)
         {
-        case CVT_BOOLEAN:
+        case CVT_J_BOOLEAN:
             javavalue->z = (pyobj == Py_True)?JNI_TRUE:JNI_FALSE;
             break;
-        case CVT_BYTE:
+        case CVT_J_BYTE:
             javavalue->b = PyInt_AsLong(pyobj);
             break;
-        case CVT_CHAR:
+        case CVT_J_CHAR:
             if(PyString_Check(pyobj))
                 javavalue->c = PyString_AsString(pyobj)[0];
             else /* PyUnicode_Check(pyobj) */
@@ -160,34 +171,221 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
                 javavalue->c = PyUnicode_AS_UNICODE(pyobj)[0];
             }
             break;
-        case CVT_SHORT:
+        case CVT_J_SHORT:
             javavalue->s = PyInt_AsLong(pyobj);
             break;
-        case CVT_INT:
+        case CVT_J_INT:
             javavalue->i = PyInt_AsLong(pyobj);
             break;
-        case CVT_LONG:
+        case CVT_J_LONG:
             javavalue->j = PyInt_AsLong(pyobj);
             break;
-        case CVT_FLOAT:
+        case CVT_J_FLOAT:
             javavalue->f = PyFloat_AsDouble(pyobj);
             break;
-        case CVT_DOUBLE:
+        case CVT_J_DOUBLE:
             javavalue->d = PyFloat_AsDouble(pyobj);
             break;
         default:
-            assert(0);
+            assert(0); /* can't happen */
         }
     }
     else
     {
-        /* TODO */
+        /* TODO : Unwrap JavaInstance object */
         javavalue->l = NULL;
     }
 }
 
-PyObject *convert_jav2py(jobject javaobj)
+PyObject *convert_javobj2py(jobject javaobj)
 {
+    /* TODO : Build a JavaInstance (use javawrapper module) */
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+PyObject *convert_calljava(jobject self, jmethodID method,
+        jvalue *parameters, jclass returntype)
+{
+    enum CVT_JType type = convert_id_type(returntype);
+
+    switch(type)
+    {
+    case CVT_J_BOOLEAN:
+        {
+            jboolean ret = (*penv)->CallBooleanMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            if(ret == JNI_FALSE)
+            {
+                Py_INCREF(Py_False);
+                return Py_False;
+            }
+            else
+            {
+                Py_INCREF(Py_True);
+                return Py_True;
+            }
+        }
+    case CVT_J_BYTE:
+        {
+            jbyte ret = (*penv)->CallByteMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_CHAR:
+        {
+            jchar ret = (*penv)->CallCharMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyString_FromFormat("%c", (int)ret);
+        }
+    case CVT_J_SHORT:
+        {
+            jshort ret = (*penv)->CallShortMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_INT:
+        {
+            jint ret = (*penv)->CallIntMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_LONG:
+        {
+            jlong ret = (*penv)->CallLongMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyLong_FromLongLong(ret);
+        }
+    case CVT_J_FLOAT:
+        {
+            jfloat ret = (*penv)->CallFloatMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_DOUBLE:
+        {
+            jdouble ret = (*penv)->CallDoubleMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_OBJECT:
+        {
+            jobject ret = (*penv)->CallObjectMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+            return convert_javobj2py(ret);
+        }
+    default:
+        assert(0); /* can't happen */
+    }
+}
+
+PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
+        jvalue *parameters, jclass returntype)
+{
+    enum CVT_JType type = convert_id_type(returntype);
+
+    switch(type)
+    {
+    case CVT_J_BOOLEAN:
+        {
+            jboolean ret = (*penv)->CallStaticBooleanMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            if(ret == JNI_FALSE)
+            {
+                Py_INCREF(Py_False);
+                return Py_False;
+            }
+            else
+            {
+                Py_INCREF(Py_True);
+                return Py_True;
+            }
+        }
+    case CVT_J_BYTE:
+        {
+            jbyte ret = (*penv)->CallStaticByteMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_CHAR:
+        {
+            jchar ret = (*penv)->CallStaticCharMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyString_FromFormat("%c", (int)ret);
+        }
+    case CVT_J_SHORT:
+        {
+            jshort ret = (*penv)->CallStaticShortMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_INT:
+        {
+            jint ret = (*penv)->CallStaticIntMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_LONG:
+        {
+            jlong ret = (*penv)->CallStaticLongMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyLong_FromLongLong(ret);
+        }
+    case CVT_J_FLOAT:
+        {
+            jfloat ret = (*penv)->CallStaticFloatMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_DOUBLE:
+        {
+            jdouble ret = (*penv)->CallStaticDoubleMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_OBJECT:
+        {
+            jobject ret = (*penv)->CallStaticObjectMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+            return convert_javobj2py(ret);
+        }
+    default:
+        assert(0); /* can't happen */
+    }
 }

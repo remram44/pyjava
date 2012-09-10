@@ -22,6 +22,7 @@ typedef struct _java_Method {
     char is_static;
     size_t nb_args;
     jclass *args;
+    jclass returntype;
 } java_Method;
 
 typedef struct _java_Methods {

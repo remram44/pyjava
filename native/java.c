@@ -89,6 +89,8 @@ static jmethodID meth_Method_getParameterTypes;
         /* java.lang.reflect.Method.getParameterTypes */
 static jmethodID meth_Method_getName;
         /* java.lang.reflect.Method.getName */
+static jmethodID meth_Method_getReturnType;
+        /* java.lang.reflect.Method.getReturnType */
 static jmethodID meth_Method_getModifiers;
         /* java.lang.reflect.Method.getModifiers */
 static jclass class_Modifier; /* java.lang.reflect.Modifier */
@@ -114,6 +116,10 @@ void java_init(void)
             penv,
             class_Method, "getName",
             "()Ljava/lang/String;");
+    meth_Method_getReturnType = (*penv)->GetMethodID(
+            penv,
+            class_Method, "getReturnType",
+            "()Ljava/lang/Class;");
     meth_Method_getModifiers = (*penv)->GetMethodID(
             penv,
             class_Method, "getModifiers",
@@ -213,6 +219,8 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
         m->id = (*penv)->FromReflectedMethod(
                 penv, method);
         m->is_static = is_static;
+
+        /* Store the parameters */
         m->nb_args = py_nb_args;
         m->args = malloc(sizeof(jclass) * py_nb_args);
         if(is_static)
@@ -230,6 +238,12 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                         penv,
                         parameter_types, j);
         }
+
+        /* Store the return type */
+        m->returntype = (*penv)->CallObjectMethod(
+                penv,
+                method, meth_Method_getReturnType);
+
         methods->nb_methods++;
     }
 
