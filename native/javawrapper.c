@@ -199,6 +199,19 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
     return (PyObject*)wrapper;
 }
 
+static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
+{
+    /*JavaInstance* wrapper;
+
+    wrapper = PyObject_New(JavaInstance, &JavaInstance_type);
+    wrapper->javaclass = self->javaclass;
+    wrapper->javaobject = ???;
+
+    return (PyObject*)wrapper;*/
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyMethodDef JavaClass_methods[] = {
     {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
     "getmethod(str) -> JavaMethod\n"
@@ -206,6 +219,14 @@ static PyMethodDef JavaClass_methods[] = {
     "Returns a wrapper for a Java method.\n"
     "The actual method with this name to call is chosen at call time, from\n"
     "the type of the parameters."
+    },
+    {"create", (PyCFunction)JavaClass_create, METH_VARARGS,
+    "create(str) -> JavaInstance\n"
+    "\n"
+    "Builds an object.\n"
+    "This allocates a new object, selecting the correct <init> method from\n"
+    "the type of the parameters, and returns a wrapper for the Java\n"
+    "instance."
     },
     {NULL}  /* Sentinel */
 };

@@ -104,6 +104,8 @@ project on Github if you can help.
 setup(name='PyJava',
       version='0.0',
       ext_modules=[pyjava],
+      package_dir = {'': 'python'},
+      packages=['pyjava'],
       description='Python-Java bridge',
       author="Remi Rampin",
       author_email='remirampin@gmail.com',
