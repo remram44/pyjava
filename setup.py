@@ -86,7 +86,27 @@ pyjava = Extension('_pyjava',
                    include_dirs=include_dirs,
                    libraries=libraries)
 
+description = """
+PyJava is a bridge allowing to use Java classes in regular Python code.
+
+It is a C extension that uses JNI to access a Java virtual machine. The
+integration with Java code is meant to be as complete as possible, allowing to
+use Java and Python objects seemlessly and converting objects back and forth
+when Java code is called. Furthermore, subclassing Java classes or interfaces
+in Python code to allow callback from Java is planned for the 0.2 version.
+
+Please note that this extension is still at a very early stage of development
+and probably shouldn't be used for anything.
+
+Don't hesitate to contact me if you have questions or remarks, or to fork the
+project on Github if you can help.
+"""
 setup(name='PyJava',
       version='0.0',
+      ext_modules=[pyjava],
       description='Python-Java bridge',
-      ext_modules=[pyjava])
+      author="Remi Rampin",
+      author_email='remirampin@gmail.com',
+      url='http://github.com/remram44/pyjava',
+      long_description=description,
+      license='MIT')
