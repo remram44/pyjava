@@ -39,8 +39,6 @@ void convert_init(void)
     jclass class_Class, class_Object;
     size_t i;
 
-    fprintf(stderr, "1\n");
-
     class_Class = (*penv)->FindClass(penv, "java/lang/Class");
     meth_Class_isPrimitive = (*penv)->GetMethodID(
             penv, class_Class, "isPrimitive", "()Z");
@@ -55,8 +53,6 @@ void convert_init(void)
                 penv, clasz, "TYPE", "Ljava/lang/Class;");
         jptypes[i] = (*penv)->GetStaticObjectField(penv, clasz, field);
     }
-
-    fprintf(stderr, "2\n");
 }
 
 static enum CVT_JType convert_id_type(jclass javatype)
