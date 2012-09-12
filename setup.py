@@ -21,7 +21,7 @@ java_home = os.getenv('JAVA_HOME')
 if java_home:
     sys.stderr.write("Using JDK from JAVA_HOME environment variable")
 elif USING_WINDOWS:
-    JDK_NAME = re.compile(r'jdk1\.([0-9])\.([0-9])_([0-9]+)')
+    JDK_NAME = re.compile(r'^jdk1\.([0-9])\.([0-9])_([0-9]+)$')
 
     def find_jdk(java_dir):
         if not os.path.exists(java_dir):
