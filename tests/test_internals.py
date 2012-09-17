@@ -71,7 +71,7 @@ class Test_call(unittest.TestCase):
         """
         Collections = _pyjava.getclass('java/util/Collections')
         List = _pyjava.getclass('java/util/List')
-        emptyList = Connections.getmethod('emptyList')
+        emptyList = Collections.getmethod('emptyList')
         li = emptyList.call()
         size = List.getmethod('size')
         self.assertEqual(size.call(li), 0)
