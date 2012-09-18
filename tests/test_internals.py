@@ -52,7 +52,7 @@ class Test_getmethod(unittest.TestCase):
         """
         String = _pyjava.getclass('java/lang/String')
         self.assertRaises(
-                _pyjava.NoMatchingMethod,
+                AttributeError,
                 String.getmethod,
                 'nonexistentMethod')
 

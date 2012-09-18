@@ -37,8 +37,10 @@ typedef struct _java_Methods {
  */
 void java_init(void);
 
-java_Methods *java_list_overloads(jclass javaclass, const char *method,
-                                  size_t nb_args);
+/**
+ * Returns all the Java methods with a given name, or NULL if none is found.
+ */
+java_Methods *java_list_overloads(jclass javaclass, const char *method);
 
 void java_free_methods(java_Methods *methods);
 

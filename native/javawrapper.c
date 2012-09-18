@@ -18,36 +18,30 @@
 typedef struct {
     PyObject_HEAD
     jclass javaclass;
+    java_Methods *overloads;
     char name[1];
 } JavaMethod;
 
 static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
 {
     size_t nbargs;
-    java_Methods *methods;
+    size_t nonmatchs = 0;
     size_t i;
     int matching_method = -1;
     int nb_matches = 1;
 
     nbargs = PyTuple_Size(args);
 
-    /* Find the methods of that class with that name and that number of
-     * parameters */
-    methods = java_list_overloads(self->javaclass, self->name, nbargs);
-    if(methods == NULL)
-    {
-        PyErr_SetString(
-                PyExc_AttributeError,
-                self->name);
-        return NULL;
-    }
-
-    for(i = 0; i < methods->nb_methods; ++i)
+    for(i = 0; i < self->overloads->nb_methods; ++i)
     {
         /* Attempt to match the arguments with the ones we got from Python. */
         size_t a;
         char matches = 1;
-        java_Method *m = &methods->methods[i];
+        java_Method *m = &self->overloads->methods[i];
+
+        if(m->nb_args != nbargs)
+            continue;
+
         for(a = 0; a < m->nb_args; ++a)
         {
             jclass javatype = m->args[a];
@@ -66,6 +60,8 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
             else
                 nb_matches++;
         }
+        else
+            nonmatchs++;
     }
 
     /*
@@ -83,7 +79,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         PyErr_Format(
                 Err_NoMatchingMethod,
                 "%d methods \"%s\" with %d parameters (no match)\n",
-                methods->nb_methods, self->name, nbargs);
+                nonmatchs, self->name, nbargs);
         return NULL;
     }
 
@@ -91,7 +87,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
         jvalue *java_parameters;
         PyObject *ret;
         java_parameters = malloc(sizeof(jvalue) * nbargs);
-        java_Method *m = &methods->methods[matching_method];
+        java_Method *m = &self->overloads->methods[matching_method];
         for(i = 0; i < nbargs; ++i)
             convert_py2jav(
                     PyTuple_GET_ITEM(args, i),
@@ -110,10 +106,16 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
                     m->returntype);
 
         free(java_parameters);
-        java_free_methods(methods);
 
         return ret;
     }
+}
+
+static void JavaMethod_dealloc(void *v_self)
+{
+    JavaMethod *self = (JavaMethod*)v_self;
+
+    java_free_methods(self->overloads);
 }
 
 static PyMethodDef JavaMethod_methods[] = {
@@ -132,7 +134,7 @@ static PyTypeObject JavaMethod_type = {
     "pyjava.JavaMethod",       /*tp_name*/
     sizeof(JavaMethod),        /*tp_basicsize*/
     1,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
+    JavaMethod_dealloc,        /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
@@ -185,15 +187,27 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
 {
     const char *name;
     size_t namelen;
+    java_Methods *methods;
     JavaMethod* wrapper;
 
     if(!(PyArg_ParseTuple(args, "s", &name)))
         return NULL;
 
+    /* Find the methods of that class with that name */
+    methods = java_list_overloads(self->javaclass, name);
+    if(methods == NULL)
+    {
+        PyErr_SetString(
+                PyExc_AttributeError,
+                name);
+        return NULL;
+    }
+
     namelen = strlen(name);
 
     wrapper = PyObject_NewVar(JavaMethod, &JavaMethod_type, namelen);
     wrapper->javaclass = self->javaclass;
+    wrapper->overloads = methods;
     strcpy(wrapper->name, name);
 
     return (PyObject*)wrapper;

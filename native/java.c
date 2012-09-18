@@ -133,16 +133,16 @@ void java_init(void)
             "(I)Z");
 }
 
-java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
-                                  size_t nb_args)
+java_Methods *java_list_overloads(jclass javaclass, const char *methodname)
 {
     jarray method_array;
     size_t nb_methods;
+    size_t nb_args;
     size_t i;
     java_Methods *methods;
 
-    fprintf(stderr, "java_list_overloads(0x%p, \"%s\", %u)\n",
-            javaclass, methodname, nb_args);
+    fprintf(stderr, "java_list_overloads(0x%p, \"%s\")\n",
+            javaclass, methodname);
 
     /* Method[] method_array = javaclass.getMethods() */
     method_array = (*penv)->CallObjectMethod(
@@ -150,8 +150,9 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
             javaclass, meth_Class_getMethods);
     nb_methods = (*penv)->GetArrayLength(penv, method_array);
 
-    /* Create the list of methods. It will not necessarily be entirely filled,
-     * but whatever. */
+    /* Create the list of methods. */
+    /* FIXME : we could count the exact number of methods we'll need to store.
+     * This structure is now kept in memory forever... */
     methods = malloc(sizeof(java_Methods) +
                      sizeof(java_Method) * (nb_methods - 1));
     methods->nb_methods = 0;
@@ -202,14 +203,9 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                 penv,
                 method, meth_Method_getParameterTypes);
 
-        {
-            size_t real_args = (*penv)->GetArrayLength(penv, parameter_types);
-            if(!is_static)
-                real_args++;
-            if(real_args != nb_args)
-                continue;
-        }
-
+        /* In Python, non-static methods take a first "self" parameter that
+         * can be made implicit through the "binding" mecanism */
+        nb_args = (*penv)->GetArrayLength(penv, parameter_types);
         if(is_static)
             py_nb_args = nb_args;
         else
@@ -245,6 +241,15 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                 method, meth_Method_getReturnType);
 
         methods->nb_methods++;
+    }
+
+    if(methods->nb_methods == 0)
+    {
+        free(methods);
+
+        fprintf(stderr, "Returning NULL, no matching methods\n");
+
+        return NULL;
     }
 
     fprintf(stderr, "Returning %d matching methods\n", methods->nb_methods);
