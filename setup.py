@@ -1,4 +1,7 @@
-from distutils.core import setup, Extension
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 import os
 import platform
 import re
@@ -111,4 +114,10 @@ setup(name='PyJava',
       author_email='remirampin@gmail.com',
       url='http://github.com/remram44/pyjava',
       long_description=description,
-      license='MIT')
+      license='MIT',
+      classifiers=[
+        "Development Status :: 2 - Pre-Alpha",
+        "License :: OSI Approved :: MIT License",
+        'Programming Language :: C',
+        'Programming Language :: Java',
+        'Programming Language :: Python'])
