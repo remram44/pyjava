@@ -289,10 +289,9 @@ static PyTypeObject JavaClass_type = {
 
 
 /*==============================================================================
- * JavaClass type.
+ * JavaInstance type.
  *
- * This is the wrapper returned by _pyjava.getclass(). It contains the jclass
- * and a getmethod() method that returns a wrapper for a specific method.
+ * This is the wrapper for Java instance objects; it contains a jobject.
  */
 
 typedef struct {
