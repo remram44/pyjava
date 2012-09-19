@@ -6,6 +6,7 @@
 #include "javawrapper.h"
 
 enum CVT_JType {
+    CVT_J_VOID,
     CVT_J_BOOLEAN,
     CVT_J_BYTE,
     CVT_J_CHAR,
@@ -16,12 +17,13 @@ enum CVT_JType {
     CVT_J_DOUBLE,
     CVT_J_OBJECT
 };
-#define NB_JPTYPES 8
-#define NB_JTYPES 9
+#define NB_JPTYPES 9
+#define NB_JTYPES 10
 #define JTYPE_PRIMITIVE(t) ((t) != CVT_J_OBJECT)
 
 static jclass jptypes[NB_JPTYPES];
 static const char *jptypes_classes[NB_JPTYPES] = {
+    "java/lang/Void",
     "java/lang/Boolean",
     "java/lang/Byte",
     "java/lang/Character",
@@ -214,6 +216,13 @@ PyObject *convert_calljava(jobject self, jmethodID method,
 
     switch(type)
     {
+    case CVT_J_VOID:
+        (*penv)->CallVoidMethodA(
+                    penv,
+                    self, method,
+                    parameters);
+        Py_INCREF(Py_None);
+        return Py_None;
     case CVT_J_BOOLEAN:
         {
             jboolean ret = (*penv)->CallBooleanMethodA(
@@ -307,6 +316,13 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
 
     switch(type)
     {
+    case CVT_J_VOID:
+        (*penv)->CallStaticVoidMethodA(
+                    penv,
+                    javaclass, method,
+                    parameters);
+        Py_INCREF(Py_None);
+        return Py_None;
     case CVT_J_BOOLEAN:
         {
             jboolean ret = (*penv)->CallStaticBooleanMethodA(
