@@ -83,3 +83,55 @@ class Test_call(unittest.TestCase):
         Math = _pyjava.getclass('java/lang/Math')
         sin = Math.getmethod('sin')
         self.assertAlmostEqual(sin.call(math.pi/2), 1.0)
+
+
+class Test_conversions(unittest.TestCase):
+    """Big set of method calls to cover the conversions.
+    """
+    def setUp(self):
+        self._jcl = _pyjava.getclass('pyjavatest/tests/CallMethod_Conversions')
+        self._jo = self._jcl.create()
+
+    def test_v_ii(self):
+        m = self._jcl.getmethod('v_ii')
+        self.assertIsNone(m.call(self._jo, 12, -5))
+
+    def test_i_fc(self):
+        m = self._jcl.getmethod('i_fc')
+        self.assertEqual(m.call(self._jo, 12.5, u'\u05D0'), -7)
+
+    def test_b_Bs(self):
+        m = self._jcl.getmethod('_b_Bs')
+        self.assertEqual(m.call(0x42, 13042), False)
+
+    def test_c_lS(self):
+        m = self._jcl.getmethod('c_lS')
+        self.assertEqual(m.call(self._jo, -70458L, u'R\C3mi'), u'\u05D0')
+
+    def test_d_iSb(self):
+        m = self._jcl.getmethod('d_iSb')
+        self.assertAlmostEqual(m.call(self._jo, 0, u'', True), 197.9986e17)
+
+    def test_f_(self):
+        m = self._jcl.getmethod('_f_')
+        self.assertAlmostEqual(m.call(), -0.07)
+
+    def test_S_(self):
+        m = self._jcl.getmethod('S_')
+        self.assertEqual(m.call(self._jo), u'\x82\x88\x8a')
+
+    def test_B_loi(self):
+        g = self._jcl.getmethod('o_b')
+        o = g.call(self._jo, False)
+        self.assertIsNotNone(o)
+        self.assertTrue(isinstance(o, _pyjava.JavaInstance))
+        m = self._jcl.getmethod('B_loi')
+        self.assertEqual(m.call(self._jo, 142005L, o, -100), 0x20)
+
+    def test_s_So(self):
+        g = self._jcl.getmethod('o_b')
+        o = g.call(self._jo, False)
+        self.assertIsNotNone(o)
+        self.assertTrue(isinstance(o, _pyjava.JavaInstance))
+        m = self._jcl.getmethod('_s_So')
+        self.assertEqual(m.call(u'\xC2\xC4\xC4\xC2', o), -15)

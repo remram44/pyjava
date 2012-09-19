@@ -23,7 +23,7 @@ else:
 
 
 # This need to be called once, before running the test suite
-_pyjava.start(dll, [])
+_pyjava.start(dll, ['-Djava.class.path=tests/java-tests.jar'])
 
 
 class Program(unittest.TestProgram):
