@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "java.h"
+#include "javawrapper.h"
 
 enum CVT_JType {
     CVT_J_BOOLEAN,
@@ -136,7 +137,15 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
     }
     else
     {
-        /* TODO : Check that pyobj is a JavaInstance */
+        /* Checks that pyobj is a JavaInstance and unwraps the jobject */
+        jclass passed_class;
+        if(javawrapper_unwrap_instance(pyobj, NULL, &passed_class))
+        {
+            /* Check that the passed object has a class that is subclass of the
+             * wanted class */
+            if(java_is_subclass(passed_class, javatype))
+                return 1;
+        }
         return 0;
     }
 }
@@ -188,16 +197,14 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
     }
     else
     {
-        /* TODO : Unwrap JavaInstance object */
-        javavalue->l = NULL;
+        javawrapper_unwrap_instance(pyobj, &javavalue->l, NULL);
+        /* can't fail; we checked in convert_check_py2jav */
     }
 }
 
 PyObject *convert_javobj2py(jobject javaobj)
 {
-    /* TODO : Build a JavaInstance (use javawrapper module) */
-    Py_INCREF(Py_None);
-    return Py_None;
+    return javawrapper_wrap_instance(javaobj);
 }
 
 PyObject *convert_calljava(jobject self, jmethodID method,

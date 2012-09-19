@@ -111,7 +111,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
     }
 }
 
-static void JavaMethod_dealloc(void *v_self)
+static void JavaMethod_dealloc(PyObject *v_self)
 {
     JavaMethod *self = (JavaMethod*)v_self;
 
@@ -289,11 +289,67 @@ static PyTypeObject JavaClass_type = {
 
 
 /*==============================================================================
+ * JavaClass type.
+ *
+ * This is the wrapper returned by _pyjava.getclass(). It contains the jclass
+ * and a getmethod() method that returns a wrapper for a specific method.
+ */
+
+typedef struct {
+    PyObject_HEAD
+    jobject javaobject;
+    jclass javaclass;
+} JavaInstance;
+
+static PyTypeObject JavaInstance_type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "pyjava.JavaInstance",     /*tp_name*/
+    sizeof(JavaInstance),      /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    0,                         /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    "Java object wrapper",    /*tp_doc*/
+    0,                         /*tp_traverse*/
+    0,                         /*tp_clear*/
+    0,                         /*tp_richcompare*/
+    0,                         /*tp_weaklistoffset*/
+    0,                         /*tp_iter*/
+    0,                         /*tp_iternext*/
+    0,                         /*tp_methods*/
+    0,                         /*tp_members*/
+    0,                         /*tp_getset*/
+    0,                         /*tp_base*/
+    0,                         /*tp_dict*/
+    0,                         /*tp_descr_get*/
+    0,                         /*tp_descr_set*/
+    0,                         /*tp_dictoffset*/
+    0,                         /*tp_init*/
+    0,                         /*tp_alloc*/
+    PyType_GenericNew,         /*tp_new*/
+};
+
+
+/*==============================================================================
  * Public functions of javawrapper.
  *
  * javawrapper_init() is called by pyjava_start() to create the types.
  *
- * javawrapper_build() is called by pyjava_getclass() to obtain a wrapper.
+ * javawrapper_wrap_class() is called by pyjava_getclass() to obtain a wrapper.
  */
 
 void javawrapper_init(PyObject *mod)
@@ -305,12 +361,39 @@ void javawrapper_init(PyObject *mod)
     if(PyType_Ready(&JavaMethod_type) < 0)
         return;
     Py_INCREF(&JavaMethod_type);
+
+    if(PyType_Ready(&JavaInstance_type) < 0)
+        return;
+    Py_INCREF(&JavaInstance_type);
 }
 
-PyObject *javawrapper_build(jclass javaclass)
+PyObject *javawrapper_wrap_class(jclass javaclass)
 {
     JavaClass* wrapper = PyObject_New(JavaClass, &JavaClass_type);
     wrapper->javaclass = javaclass;
 
     return (PyObject*)wrapper;
+}
+
+int javawrapper_unwrap_instance(PyObject *pyobject,
+        jobject *javaobject, jclass *javaclass)
+{
+    if(PyObject_IsInstance(pyobject, (PyObject*)&JavaInstance_type))
+    {
+        JavaInstance *inst = (JavaInstance*)pyobject;
+        if(javaobject != NULL)
+            *javaobject = inst->javaobject;
+        if(javaclass != NULL)
+            *javaclass = inst->javaclass;
+        return 1;
+    }
+    return 0;
+}
+
+PyObject *javawrapper_wrap_instance(jobject javaobject)
+{
+    JavaInstance *inst = PyObject_New(JavaInstance, &JavaInstance_type);
+    inst->javaobject = javaobject;
+    inst->javaclass = java_getclass(javaobject);
+    return (PyObject*)inst;
 }

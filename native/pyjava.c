@@ -96,7 +96,7 @@ static PyObject *pyjava_getclass(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    return javawrapper_build(javaclass);
+    return javawrapper_wrap_class(javaclass);
 }
 
 static PyMethodDef methods[] = {

@@ -17,6 +17,7 @@ extern JNIEnv *penv;
  */
 JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts);
 
+
 typedef struct _java_Method {
     jmethodID id;
     char is_static;
@@ -30,6 +31,7 @@ typedef struct _java_Methods {
     java_Method methods[1];
 } java_Methods;
 
+
 /**
  * Initialization method.
  *
@@ -37,11 +39,26 @@ typedef struct _java_Methods {
  */
 void java_init(void);
 
+
 /**
  * Returns all the Java methods with a given name, or NULL if none is found.
  */
 java_Methods *java_list_overloads(jclass javaclass, const char *method);
 
 void java_free_methods(java_Methods *methods);
+
+
+/**
+ * Returns the Java class of a Java object.
+ */
+jclass java_getclass(jobject javaobject);
+
+
+/**
+ * Checks whether a class is a subclass (or the same, or implement) of another.
+ *
+ * @return 1 if it is.
+ */
+int java_is_subclass(jclass sub, jclass klass);
 
 #endif

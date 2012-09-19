@@ -64,7 +64,7 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
         #endif
 
         for(i = 0; i < nbopts; ++i)
-            options[i].optionString = opts[i];
+            options[i].optionString = (char*)opts[i];
         vm_args.version = 0x00010002;
         vm_args.options = options;
         vm_args.nOptions = nbopts;
@@ -263,4 +263,14 @@ void java_free_methods(java_Methods *methods)
     for(i = 0; i < methods->nb_methods; ++i)
         free(methods->methods[i].args);
     free(methods);
+}
+
+jclass java_getclass(jobject javaobject)
+{
+    return (*penv)->GetObjectClass(penv, javaobject);
+}
+
+int java_is_subclass(jclass sub, jclass klass)
+{
+    return (*penv)->IsAssignableFrom(penv, sub, klass) != JNI_FALSE;
 }

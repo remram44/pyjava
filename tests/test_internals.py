@@ -63,6 +63,7 @@ class Test_call(unittest.TestCase):
         """
         Vector = _pyjava.getclass('java/util/Vector')
         vector = Vector.create(10)
+        self.assertIsNotNone(vector)
         capacity = Vector.getmethod('capacity')
         self.assertEqual(capacity.call(vector), 10)
 
