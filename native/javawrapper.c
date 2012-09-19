@@ -163,7 +163,7 @@ static PyMethodDef JavaMethod_methods[] = {
 static PyTypeObject JavaMethod_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "pyjava.JavaMethod",       /*tp_name*/
+    "_pyjava.JavaMethod",      /*tp_name*/
     sizeof(JavaMethod),        /*tp_basicsize*/
     1,                         /*tp_itemsize*/
     JavaMethod_dealloc,        /*tp_dealloc*/
@@ -218,7 +218,7 @@ typedef struct {
 static PyTypeObject JavaInstance_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "pyjava.JavaInstance",     /*tp_name*/
+    "_pyjava.JavaInstance",    /*tp_name*/
     sizeof(JavaInstance),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -237,7 +237,7 @@ static PyTypeObject JavaInstance_type = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Java object wrapper",    /*tp_doc*/
+    "Java object wrapper",     /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
     0,                         /*tp_richcompare*/
@@ -392,7 +392,7 @@ static PyMethodDef JavaClass_methods[] = {
 static PyTypeObject JavaClass_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "pyjava.JavaClass",        /*tp_name*/
+    "_pyjava.JavaClass",       /*tp_name*/
     sizeof(JavaClass),         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     JavaClass_dealloc,         /*tp_dealloc*/
@@ -445,14 +445,17 @@ void javawrapper_init(PyObject *mod)
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
+    PyModule_AddObject(mod, "JavaClass", (PyObject*)&JavaClass_type);
 
     if(PyType_Ready(&JavaMethod_type) < 0)
         return;
     Py_INCREF(&JavaMethod_type);
+    PyModule_AddObject(mod, "JavaMethod", (PyObject*)&JavaMethod_type);
 
     if(PyType_Ready(&JavaInstance_type) < 0)
         return;
     Py_INCREF(&JavaInstance_type);
+    PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 }
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
