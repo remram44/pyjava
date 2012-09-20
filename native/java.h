@@ -59,6 +59,14 @@ jclass java_getclass(jobject javaobject);
 
 
 /**
+ * Calls Object.equals on two Java objects.
+ *
+ * @return 1 if it is equal.
+ */
+int java_equals(jobject a, jobject b);
+
+
+/**
  * Checks whether a class is a subclass (or the same, or implement) of another.
  *
  * @return 1 if it is.

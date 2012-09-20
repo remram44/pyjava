@@ -83,6 +83,8 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
     return (res >= 0)?env:NULL;
 }
 
+static jmethodID meth_Object_equals; /* java.lang.Object#equals() */
+
 static jclass class_Class; /* java.lang.Class */
 static jmethodID meth_Class_getMethods; /* java.lang.Class#getMethods() */
 static jmethodID meth_Class_getConstructors;
@@ -106,7 +108,14 @@ static jmethodID meth_Modifier_isStatic;
 
 void java_init(void)
 {
-    jclass class_Method, class_Constructor;
+    jclass class_Object, class_Method, class_Constructor;
+
+    class_Object = (*penv)->FindClass(
+            penv, "java/lang/Object");
+    meth_Object_equals = (*penv)->GetMethodID(
+            penv,
+            class_Object, "equals",
+            "(Ljava/lang/Object;)Z");
 
     class_Class = (*penv)->FindClass(
             penv, "java/lang/Class");
@@ -310,6 +319,11 @@ void java_free_methods(java_Methods *methods)
 jclass java_getclass(jobject javaobject)
 {
     return (*penv)->GetObjectClass(penv, javaobject);
+}
+
+int java_equals(jobject a, jobject b)
+{
+    return (*penv)->CallBooleanMethod(penv, a, meth_Object_equals, b) != JNI_FALSE;
 }
 
 int java_is_subclass(jclass sub, jclass klass)

@@ -34,6 +34,7 @@ static const char *jptypes_classes[NB_JPTYPES] = {
     "java/lang/Double"
 };
 
+static jclass class_String; /* java.lang.String */
 static jmethodID meth_Class_isPrimitive; /* java.lang.Class.isPrimitive */
 static jmethodID meth_Object_equals; /* java.lang.Object.equals */
 
@@ -41,6 +42,8 @@ void convert_init(void)
 {
     jclass class_Class, class_Object;
     size_t i;
+
+    class_String = (*penv)->FindClass(penv, "java/lang/String");
 
     class_Class = (*penv)->FindClass(penv, "java/lang/Class");
     meth_Class_isPrimitive = (*penv)->GetMethodID(
@@ -139,15 +142,21 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
     }
     else
     {
-        /* Checks that pyobj is a JavaInstance and unwraps the jobject */
+        /* Checks that pyobj is a JavaInstance and unwraps the jclass */
         jclass passed_class;
         if(javawrapper_unwrap_instance(pyobj, NULL, &passed_class))
         {
             /* Check that the passed object has a class that is subclass of the
              * wanted class */
-            if(java_is_subclass(passed_class, javatype))
+            return java_is_subclass(passed_class, javatype);
+        }
+        else
+        {
+            /* Special case: We can convert a unicode object to String */
+            if(java_equals(javatype, class_String) && PyUnicode_Check(pyobj))
                 return 1;
         }
+
         return 0;
     }
 }
@@ -199,14 +208,20 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
     }
     else
     {
-        javawrapper_unwrap_instance(pyobj, &javavalue->l, NULL);
-        /* can't fail; we checked in convert_check_py2jav */
+        if(javawrapper_unwrap_instance(pyobj, &javavalue->l, NULL))
+            return ;
+        else
+        {
+            /* Special case: String objects can be created from unicode, which
+             * makes sense. They can get converted back when received from
+             * Java. */
+            PyObject *pyutf8 = PyUnicode_AsUTF8String(pyobj);
+            const char *utf8 = PyString_AsString(pyutf8);
+            size_t size = PyString_GET_SIZE(pyutf8);
+            javavalue->l = (*penv)->NewStringUTF(penv, utf8);
+            Py_DECREF(pyutf8);
+        }
     }
-}
-
-PyObject *convert_javobj2py(jobject javaobj)
-{
-    return javawrapper_wrap_instance(javaobj);
 }
 
 PyObject *convert_calljava(jobject self, jmethodID method,
@@ -254,7 +269,7 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                     penv,
                     self, method,
                     parameters);
-            return PyString_FromFormat("%c", (int)ret);
+            return PyUnicode_FromFormat("%c", (int)ret);
         }
     case CVT_J_SHORT:
         {
@@ -302,7 +317,20 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                     penv,
                     self, method,
                     parameters);
-            return convert_javobj2py(ret);
+            if(java_is_subclass(java_getclass(ret), class_String))
+            {
+                /* Special case: String objects get converted to unicode, which
+                 * makes sense. They can get converted back if need be. */
+                const char *utf8 = (*penv)->GetStringUTFChars(
+                        penv, ret, NULL);
+                PyObject *u = PyUnicode_FromStringAndSize(
+                        utf8,
+                        (*penv)->GetStringUTFLength(penv, ret));
+                (*penv)->ReleaseStringUTFChars(penv, ret, utf8);
+                return u;
+            }
+            else
+                return javawrapper_wrap_instance(ret);
         }
     default:
         assert(0); /* can't happen */
@@ -354,7 +382,7 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                     penv,
                     javaclass, method,
                     parameters);
-            return PyString_FromFormat("%c", (int)ret);
+            return PyUnicode_FromFormat("%c", (int)ret);
         }
     case CVT_J_SHORT:
         {
@@ -402,7 +430,20 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                     penv,
                     javaclass, method,
                     parameters);
-            return convert_javobj2py(ret);
+            if(java_is_subclass(java_getclass(ret), class_String))
+            {
+                /* Special case: String objects get converted to unicode, which
+                 * makes sense. They can get converted back if need be. */
+                const char *utf8 = (*penv)->GetStringUTFChars(
+                        penv, ret, NULL);
+                PyObject *u = PyUnicode_FromStringAndSize(
+                        utf8,
+                        (*penv)->GetStringUTFLength(penv, ret));
+                (*penv)->ReleaseStringUTFChars(penv, ret, utf8);
+                return u;
+            }
+            else
+                return javawrapper_wrap_instance(ret);
         }
     default:
         assert(0); /* can't happen */

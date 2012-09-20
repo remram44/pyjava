@@ -34,15 +34,6 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue);
 
 
 /**
- * Convert a given Java object as a Python object.
- *
- * This is always possible as we have no static type to comply to. If the
- * object is a reference to an object, a JavaInstance wrapper will be returned.
- */
-PyObject *convert_javobj2py(jobject javaobj);
-
-
-/**
  * Convert the return value of a Java method as a Python object.
  *
  * This function takes the return type as a jclass; it can be an object or a
