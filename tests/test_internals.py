@@ -25,9 +25,10 @@ class Test_getclass(unittest.TestCase):
                 'java/lang/Nonexistent')
 
     def test_String(self):
-        """Wraps an well-known class.
+        """Wraps a well-known class.
         """
         String = _pyjava.getclass('java/lang/String')
+        self.assertIsNotNone(String)
 
 
 class Test_getmethod(unittest.TestCase):
@@ -48,7 +49,7 @@ class Test_getmethod(unittest.TestCase):
     def test_nonexistent(self):
         """Requests a wrapper for an unknown method.
 
-        This be detected when accessing.
+        This should be detected when accessing.
         """
         String = _pyjava.getclass('java/lang/String')
         self.assertRaises(
