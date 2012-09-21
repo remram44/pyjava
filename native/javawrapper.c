@@ -212,7 +212,6 @@ static PyTypeObject JavaMethod_type = {
 typedef struct {
     PyObject_HEAD
     jobject javaobject;
-    jclass javaclass;
 } JavaInstance;
 
 static PyTypeObject JavaInstance_type = {
@@ -267,7 +266,8 @@ static PyTypeObject JavaInstance_type = {
 
 typedef struct {
     PyObject_HEAD
-    jclass javaclass;
+    jobject javaclass;
+    /* the struct until here is the same as JavaInstance, as we inherit! */
     java_Methods *constructors;
 } JavaClass;
 
@@ -353,7 +353,6 @@ static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
         JavaInstance *inst;
 
         inst = PyObject_New(JavaInstance, &JavaInstance_type);
-        inst->javaclass = self->javaclass;
         inst->javaobject = javaobject;
 
         return (PyObject*)inst;
@@ -410,7 +409,8 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    Py_TPFLAGS_DEFAULT |
+      Py_TPFLAGS_BASETYPE,     /*tp_flags*/
     "Java class wrapper",      /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
@@ -442,6 +442,12 @@ static PyTypeObject JavaClass_type = {
 
 void javawrapper_init(PyObject *mod)
 {
+    if(PyType_Ready(&JavaInstance_type) < 0)
+        return;
+    Py_INCREF(&JavaInstance_type);
+    PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
+
+    JavaClass_type.tp_base = &JavaInstance_type;
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
@@ -451,11 +457,6 @@ void javawrapper_init(PyObject *mod)
         return;
     Py_INCREF(&JavaMethod_type);
     PyModule_AddObject(mod, "JavaMethod", (PyObject*)&JavaMethod_type);
-
-    if(PyType_Ready(&JavaInstance_type) < 0)
-        return;
-    Py_INCREF(&JavaInstance_type);
-    PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 }
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
@@ -476,7 +477,7 @@ int javawrapper_unwrap_instance(PyObject *pyobject,
         if(javaobject != NULL)
             *javaobject = inst->javaobject;
         if(javaclass != NULL)
-            *javaclass = inst->javaclass;
+            *javaclass = java_getclass(inst->javaobject);
         return 1;
     }
     return 0;
@@ -484,8 +485,13 @@ int javawrapper_unwrap_instance(PyObject *pyobject,
 
 PyObject *javawrapper_wrap_instance(jobject javaobject)
 {
-    JavaInstance *inst = PyObject_New(JavaInstance, &JavaInstance_type);
-    inst->javaobject = javaobject;
-    inst->javaclass = java_getclass(javaobject);
-    return (PyObject*)inst;
+    jclass javaclass = java_getclass(javaobject);
+    if(java_equals(javaclass, class_Class))
+        return javawrapper_wrap_class(javaobject);
+    else
+    {
+        JavaInstance *inst = PyObject_New(JavaInstance, &JavaInstance_type);
+        inst->javaobject = javaobject;
+        return (PyObject*)inst;
+    }
 }

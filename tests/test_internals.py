@@ -135,3 +135,12 @@ class Test_conversions(unittest.TestCase):
         self.assertTrue(isinstance(o, _pyjava.JavaInstance))
         m = self._jcl.getmethod('_s_So')
         self.assertEqual(m.call(u'\u252C\u2500\u2500\u252C', o), -15)
+
+    def test_C_(self):
+        g = self._jcl.getmethod('_C_')
+        C = g.call() # this returns a Class, which should be wrapped as
+                # JavaClass instead of JavaInstance automatically
+        self.assertIsNotNone(C)
+        o = C.create(17)
+        m = C.getmethod('i_')
+        self.assertEqual(m.call(o), 42)
