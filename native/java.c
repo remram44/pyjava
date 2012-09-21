@@ -30,7 +30,6 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
         #if defined(_WIN32) || defined(_WIN64)
         {
             HINSTANCE jvm_dll;
-            fprintf(stderr, "Loading jvm.dll\n");
             jvm_dll = LoadLibrary(path);
             if(jvm_dll == NULL)
             {
@@ -70,9 +69,7 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
         vm_args.nOptions = nbopts;
         vm_args.ignoreUnrecognized = JNI_TRUE;
         /* Create the Java VM */
-        fprintf(stderr, "JNI_CreateJavaVM(<%d options>)\n", nbopts);
         res = dyn_JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
-        fprintf(stderr, "res = %ld\nenv = 0x%p\n", res, env);
 
         free(options);
     }
@@ -170,9 +167,6 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
     size_t nb_args;
     size_t i;
     java_Methods *methods;
-
-    fprintf(stderr, "java_list_overloads(0x%p, \"%s\", %s)\n",
-            javaclass, methodname, constructors?"constructors":"methods");
 
     if(!constructors)
     {
@@ -295,15 +289,8 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
     if(methods->nb_methods == 0)
     {
         free(methods);
-
-        fprintf(stderr, "Returning NULL, no matching %s\n",
-                constructors?"constructors":"methods");
-
         return NULL;
     }
-
-    fprintf(stderr, "Returning %d matching %s\n", methods->nb_methods,
-            constructors?"constructors":"methods");
 
     return methods;
 }
