@@ -34,24 +34,9 @@ static const char *jptypes_classes[NB_JPTYPES] = {
     "java/lang/Double"
 };
 
-static jclass class_String; /* java.lang.String */
-static jmethodID meth_Class_isPrimitive; /* java.lang.Class.isPrimitive */
-static jmethodID meth_Object_equals; /* java.lang.Object.equals */
-
 void convert_init(void)
 {
-    jclass class_Class, class_Object;
     size_t i;
-
-    class_String = (*penv)->FindClass(penv, "java/lang/String");
-
-    class_Class = (*penv)->FindClass(penv, "java/lang/Class");
-    meth_Class_isPrimitive = (*penv)->GetMethodID(
-            penv, class_Class, "isPrimitive", "()Z");
-    class_Object = (*penv)->FindClass(penv, "java/lang/Object");
-    meth_Object_equals = (*penv)->GetMethodID(
-            penv, class_Object, "equals", "(Ljava/lang/Object;)Z");
-
     for(i = 0; i < NB_JPTYPES; ++i)
     {
         jclass clasz = (*penv)->FindClass(penv, jptypes_classes[i]);

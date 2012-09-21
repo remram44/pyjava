@@ -83,82 +83,82 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
     return (res >= 0)?env:NULL;
 }
 
-static jmethodID meth_Object_equals; /* java.lang.Object#equals() */
+/* java.lang.Class */
+jclass class_Class;
+    jmethodID meth_Class_getConstructors;
+    jmethodID meth_Class_getMethods;
+    jmethodID meth_Class_isPrimitive;
 
-static jclass class_Class; /* java.lang.Class */
-static jmethodID meth_Class_getMethods; /* java.lang.Class#getMethods() */
-static jmethodID meth_Class_getConstructors;
-        /* java.lang.Class#getConstructors() */
+/* java.lang.Object */
+jclass class_Object;
+    jmethodID meth_Object_equals;
 
-static jmethodID meth_Method_getParameterTypes;
-        /* java.lang.reflect.Method.getParameterTypes */
-static jmethodID meth_Method_getName;
-        /* java.lang.reflect.Method.getName */
-static jmethodID meth_Method_getReturnType;
-        /* java.lang.reflect.Method.getReturnType */
-static jmethodID meth_Method_getModifiers;
-        /* java.lang.reflect.Method.getModifiers */
+/* java.lang.String */
+jclass class_String;
 
-static jmethodID meth_Constructor_getParameterTypes;
-        /* java.lang.reflect.Constructor.getParameterTypes */
+/* java.lang.reflect.Method */
+    jmethodID meth_Method_getModifiers;
+    jmethodID meth_Method_getName;
+    jmethodID meth_Method_getParameterTypes;
+    jmethodID meth_Method_getReturnType;
 
-static jclass class_Modifier; /* java.lang.reflect.Modifier */
-static jmethodID meth_Modifier_isStatic;
-        /* java.lang.reflect.Modifier.isStatic */
+/* java.lang.reflect.Constructor */
+    jmethodID meth_Constructor_getParameterTypes;
+
+/* java.lang.reflect.Modifier */
+jclass class_Modifier;
+    jmethodID meth_Modifier_isStatic;
 
 void java_init(void)
 {
-    jclass class_Object, class_Method, class_Constructor;
-
-    class_Object = (*penv)->FindClass(
-            penv, "java/lang/Object");
-    meth_Object_equals = (*penv)->GetMethodID(
-            penv,
-            class_Object, "equals",
-            "(Ljava/lang/Object;)Z");
+    jclass class_Method, class_Constructor;
 
     class_Class = (*penv)->FindClass(
             penv, "java/lang/Class");
     meth_Class_getMethods = (*penv)->GetMethodID(
-            penv,
-            class_Class, "getMethods",
+            penv, class_Class, "getMethods",
             "()[Ljava/lang/reflect/Method;");
     meth_Class_getConstructors = (*penv)->GetMethodID(
-            penv,
-            class_Class, "getConstructors",
+            penv, class_Class, "getConstructors",
             "()[Ljava/lang/reflect/Constructor;");
+    meth_Class_isPrimitive = (*penv)->GetMethodID(
+            penv, class_Class, "isPrimitive",
+            "()Z");
+
+    class_Object = (*penv)->FindClass(
+            penv, "java/lang/Object");
+    meth_Object_equals = (*penv)->GetMethodID(
+            penv, class_Object, "equals",
+            "(Ljava/lang/Object;)Z");
+
+    class_String = (*penv)->FindClass(
+            penv, "java/lang/String");
 
     class_Method = (*penv)->FindClass(
             penv, "java/lang/reflect/Method");
-    meth_Method_getParameterTypes = (*penv)->GetMethodID(
-            penv,
-            class_Method, "getParameterTypes",
-            "()[Ljava/lang/Class;");
-    meth_Method_getName = (*penv)->GetMethodID(
-            penv,
-            class_Method, "getName",
-            "()Ljava/lang/String;");
-    meth_Method_getReturnType = (*penv)->GetMethodID(
-            penv,
-            class_Method, "getReturnType",
-            "()Ljava/lang/Class;");
     meth_Method_getModifiers = (*penv)->GetMethodID(
-            penv,
-            class_Method, "getModifiers",
+            penv, class_Method, "getModifiers",
             "()I");
+    meth_Method_getName = (*penv)->GetMethodID(
+            penv, class_Method, "getName",
+            "()Ljava/lang/String;");
+    meth_Method_getParameterTypes = (*penv)->GetMethodID(
+            penv, class_Method, "getParameterTypes",
+            "()[Ljava/lang/Class;");
+    meth_Method_getReturnType = (*penv)->GetMethodID(
+            penv, class_Method, "getReturnType",
+            "()Ljava/lang/Class;");
 
     class_Constructor = (*penv)->FindClass(
             penv, "java/lang/reflect/Constructor");
     meth_Constructor_getParameterTypes = (*penv)->GetMethodID(
-            penv,
-            class_Constructor, "getParameterTypes",
+            penv, class_Constructor, "getParameterTypes",
             "()[Ljava/lang/Class;");
 
     class_Modifier = (*penv)->FindClass(
             penv, "java/lang/reflect/Modifier");
     meth_Modifier_isStatic = (*penv)->GetStaticMethodID(
-            penv,
-            class_Modifier, "isStatic",
+            penv, class_Modifier, "isStatic",
             "(I)Z");
 }
 

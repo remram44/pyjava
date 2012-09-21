@@ -73,4 +73,31 @@ int java_equals(jobject a, jobject b);
  */
 int java_is_subclass(jclass sub, jclass klass);
 
+
+/* java.lang.Class */
+extern jclass class_Class;
+    extern jmethodID meth_Class_getConstructors;
+    extern jmethodID meth_Class_getMethods;
+    extern jmethodID meth_Class_isPrimitive;
+
+/* java.lang.Object */
+extern jclass class_Object;
+    extern jmethodID meth_Object_equals;
+
+/* java.lang.String */
+extern jclass class_String;
+
+/* java.lang.reflect.Method */
+    extern jmethodID meth_Method_getParameterTypes;
+    extern jmethodID meth_Method_getName;
+    extern jmethodID meth_Method_getReturnType;
+    extern jmethodID meth_Method_getModifiers;
+
+/* java.lang.reflect.Constructor */
+    extern jmethodID meth_Constructor_getParameterTypes;
+
+/* java.lang.reflect.Modifier */
+extern jclass class_Modifier;
+    extern jmethodID meth_Modifier_isStatic;
+
 #endif
