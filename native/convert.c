@@ -203,7 +203,7 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
             PyObject *pyutf8 = PyUnicode_AsUTF8String(pyobj);
             const char *utf8 = PyString_AsString(pyutf8);
             size_t size = PyString_GET_SIZE(pyutf8);
-            javavalue->l = (*penv)->NewStringUTF(penv, utf8);
+            javavalue->l = java_from_utf8(utf8, size);
             Py_DECREF(pyutf8);
         }
     }
@@ -302,17 +302,15 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                     penv,
                     self, method,
                     parameters);
-            if(java_is_subclass(java_getclass(ret), class_String))
+            if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
-                const char *utf8 = (*penv)->GetStringUTFChars(
-                        penv, ret, NULL);
-                PyObject *u = PyUnicode_FromStringAndSize(
+                size_t size;
+                const char *utf8 = java_to_utf8(ret, &size);
+                return PyUnicode_FromStringAndSize(
                         utf8,
-                        (*penv)->GetStringUTFLength(penv, ret));
-                (*penv)->ReleaseStringUTFChars(penv, ret, utf8);
-                return u;
+                        size);
             }
             else
                 return javawrapper_wrap_instance(ret);
@@ -415,17 +413,15 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                     penv,
                     javaclass, method,
                     parameters);
-            if(java_is_subclass(java_getclass(ret), class_String))
+            if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
-                const char *utf8 = (*penv)->GetStringUTFChars(
-                        penv, ret, NULL);
-                PyObject *u = PyUnicode_FromStringAndSize(
+                size_t size;
+                const char *utf8 = java_to_utf8(ret, &size);
+                return PyUnicode_FromStringAndSize(
                         utf8,
-                        (*penv)->GetStringUTFLength(penv, ret));
-                (*penv)->ReleaseStringUTFChars(penv, ret, utf8);
-                return u;
+                        size);
             }
             else
                 return javawrapper_wrap_instance(ret);

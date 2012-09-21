@@ -119,7 +119,7 @@ class Test_conversions(unittest.TestCase):
 
     def test_S_(self):
         m = self._jcl.getmethod('S_')
-        self.assertEqual(m.call(self._jo), u'\xE9\xEA\xE8')
+        self.assertEqual(m.call(self._jo), u'\xE9\xEA\x00\xE8')
 
     def test_B_loi(self):
         g = self._jcl.getmethod('o_b')
@@ -135,7 +135,7 @@ class Test_conversions(unittest.TestCase):
         self.assertIsNotNone(o)
         self.assertTrue(isinstance(o, _pyjava.JavaInstance))
         m = self._jcl.getmethod('_s_So')
-        self.assertEqual(m.call(u'\u252C\u2500\u2500\u252C', o), -15)
+        self.assertEqual(m.call(u'\x00\u252C\u2500\u2500\u252C', o), -15)
 
     def test_C_(self):
         g = self._jcl.getmethod('_C_')

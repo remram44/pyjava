@@ -1,6 +1,5 @@
 #include "java.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -80,6 +79,8 @@ JNIEnv *java_start_vm(const char *path, const char **opts, size_t nbopts)
     return (res >= 0)?env:NULL;
 }
 
+jstring str_utf8; /* "UTF-8" */
+
 /* java.lang.Class */
 jclass class_Class;
     jmethodID meth_Class_getConstructors;
@@ -92,6 +93,8 @@ jclass class_Object;
 
 /* java.lang.String */
 jclass class_String;
+    jmethodID cstr_String_bytes;
+    jmethodID meth_String_getBytes;
 
 /* java.lang.reflect.Method */
     jmethodID meth_Method_getModifiers;
@@ -130,6 +133,12 @@ void java_init(void)
 
     class_String = (*penv)->FindClass(
             penv, "java/lang/String");
+    cstr_String_bytes = (*penv)->GetMethodID(
+            penv, class_String, "<init>",
+            "([BLjava/lang/String;)V");
+    meth_String_getBytes = (*penv)->GetMethodID(
+            penv, class_String, "getBytes",
+            "(Ljava/lang/String;)[B");
 
     class_Method = (*penv)->FindClass(
             penv, "java/lang/reflect/Method");
@@ -157,6 +166,8 @@ void java_init(void)
     meth_Modifier_isStatic = (*penv)->GetStaticMethodID(
             penv, class_Modifier, "isStatic",
             "(I)Z");
+
+    str_utf8 = (*penv)->NewStringUTF(penv, "UTF-8");
 }
 
 java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
@@ -316,4 +327,62 @@ int java_equals(jobject a, jobject b)
 int java_is_subclass(jclass sub, jclass klass)
 {
     return (*penv)->IsAssignableFrom(penv, sub, klass) != JNI_FALSE;
+}
+
+void java_clear_ref(jobject ref)
+{
+    switch((*penv)->GetObjectRefType(penv, ref))
+    {
+    case JNILocalRefType:
+        (*penv)->DeleteLocalRef(penv, ref);
+        break;
+    case JNIGlobalRefType:
+        (*penv)->DeleteGlobalRef(penv, ref);
+        break;
+    default:
+        /* do nothing */
+        break;
+    }
+}
+
+jstring java_from_utf8(const char *utf8, size_t size)
+{
+    /* string = new String(utf8, "UTF-8"); */
+
+    jstring str;
+    jobject bytes = (*penv)->NewByteArray(penv, size);
+
+    (*penv)->SetByteArrayRegion(
+            penv, bytes,
+            0, size, (jbyte*)utf8);
+
+    str = (*penv)->NewObject(
+            penv, class_String, cstr_String_bytes,
+            bytes, str_utf8);
+
+    /* Clear reference */
+    java_clear_ref(bytes);
+
+    return str;
+}
+
+const char *java_to_utf8(jstring str, size_t *newsize)
+{
+    /* byte[] utf8 = string.getBytes("UTF-8"); */
+
+    jobject bytes = (*penv)->CallObjectMethod(
+            penv, str, meth_String_getBytes,
+            str_utf8);
+
+    size_t len = (*penv)->GetArrayLength(penv, bytes);
+    char *utf8 = malloc(len);
+    (*penv)->GetByteArrayRegion(penv, bytes, 0, len, (jbyte*)utf8);
+
+    /* Clear reference */
+    java_clear_ref(bytes);
+
+    if(newsize != NULL)
+        *newsize = len;
+
+    return utf8;
 }

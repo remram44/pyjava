@@ -74,6 +74,43 @@ int java_equals(jobject a, jobject b);
 int java_is_subclass(jclass sub, jclass klass);
 
 
+/**
+ * Clear a local or global ref to a Java object.
+ */
+void java_clear_ref(jobject ref);
+
+
+/**
+ * Create a Java string from standard UTF-8.
+ *
+ * Java's string functions expect a modified UTF-8 encoding which noone else
+ * uses. These functions allow to use regular UTF-8, like Python does.
+ *
+ * @param utf8 Standard UTF-8 representation of the string; might contain NULL
+ * bytes.
+ * @param size Size of the string, in bytes. Might be larger than strlen(utf8)
+ * because of embedded zeros.
+ * @return A reference to a String object, which you might want to clear.
+ */
+jstring java_from_utf8(const char *utf8, size_t size);
+
+
+/**
+ * Extracts a standard UTF-8 representation of a Java string.
+ *
+ * Java's string functions expect a modified UTF-8 encoding which noone else
+ * uses. These functions allow to use regular UTF-8, like Python does.
+ *
+ * @param str A reference to a String object.
+ * @param newsize If not NULL, the size of the new representation, in bytes,
+ * will be written at that address. It is necessary as the returned string
+ * cannot be safely NULL-terminated; it might contain embedded NULL bytes.
+ */
+const char *java_to_utf8(jstring str, size_t *newsize);
+
+
+extern jstring str_utf8; /* "UTF-8" */
+
 /* java.lang.Class */
 extern jclass class_Class;
     extern jmethodID meth_Class_getConstructors;
@@ -86,6 +123,8 @@ extern jclass class_Object;
 
 /* java.lang.String */
 extern jclass class_String;
+    extern jmethodID cstr_String_bytes;
+    extern jmethodID meth_String_getBytes;
 
 /* java.lang.reflect.Method */
     extern jmethodID meth_Method_getParameterTypes;
