@@ -49,7 +49,16 @@ def find_dll():
 
         java_home = os.getenv('JAVA_HOME')
         if java_home:
-            sys.stderr.write("Using JRE from JAVA_HOME environment variable")
+            # JAVA_HOME might be set to a JDK; in that case we use the 'jre'
+            # subdirectory
+            java_home_jre = os.path.join(java_home, 'jre')
+            if os.path.exists(java_home_jre):
+                java_home = java_home_jre
+                sys.stderr.write("Using JRE from JAVA_HOME environment "
+                                 "variable (in jre/ subdir)\n")
+            else:
+                sys.stderr.write("Using JRE from JAVA_HOME environment "
+                                 "variable\n")
         elif os.path.exists('C:\\Program Files (x86)'):
             if bits == 32:
                 java_home = find_jre('C:\\Program Files (x86)\\Java')
