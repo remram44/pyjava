@@ -1,8 +1,7 @@
 """Tests for the pyjava module.
 
 This package contains tests for the interface of PyJava, directly accessed by
-the user. Tests are also available, in the 'internals' package, for the C
-components.
+the user.
 """
 
 
@@ -41,7 +40,7 @@ class Test_getmethod(unittest.TestCase):
         """Accesses a well-known static method.
         """
         Math = pyjava.getclass('java.lang.Math')
-        self.assertTrue(isinstance(Math.sin, pyjava._StaticJavaMethod))
+        self.assertTrue(isinstance(Math.sin, pyjava._UnboundJavaMethod))
 
     def test_nonexistent(self):
         """Accesses an unknown method.
