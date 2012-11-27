@@ -115,7 +115,7 @@ static PyMethodDef methods[] = {
 
 PyMODINIT_FUNC init_pyjava(void)
 {
-    PyObject *mod;
+    PyObject *mod, *bases;
 
     mod = Py_InitModule("_pyjava", methods);
     if(mod == NULL)
@@ -130,10 +130,12 @@ PyMODINIT_FUNC init_pyjava(void)
     Py_INCREF(Err_ClassNotFound);
     PyModule_AddObject(mod, "ClassNotFound", Err_ClassNotFound);
 
+    bases = PyTuple_Pack(2, Err_Base, PyExc_TypeError);
     Err_NoMatchingMethod = PyErr_NewException(
-            "pyjava.NoMatchingMethod", Err_Base, NULL);
+            "pyjava.NoMatchingMethod", bases, NULL);
     Py_INCREF(Err_NoMatchingMethod);
     PyModule_AddObject(mod, "NoMatchingMethod", Err_NoMatchingMethod);
+    Py_DECREF(bases);
 
     javawrapper_init(mod);
 }
