@@ -86,6 +86,43 @@ class Test_call(unittest.TestCase):
         self.assertAlmostEqual(sin.call(math.pi/2), 1.0)
 
 
+class Test_getfield(unittest.TestCase):
+    def test_field(self):
+        """TODO
+        """
+
+    def test_staticfield(self):
+        """Requests a well-known static field.
+        """
+        Collections = _pyjava.getclass('java/util/Collections')
+        empty_list = Collections.getfield('EMPTY_LIST')
+        self.assertIsNotNone(empty_list)
+
+    def test_nonexistent(self):
+        """Requests a wrapper for an unknown field.
+
+        This should be detected immediately.
+        """
+        Math = _pyjava.getclass('java/lang/Math')
+        self.assertRaises(
+                AttributeError,
+                Math.getfield,
+                'nonexistentfield')
+
+
+class Test_accessfield(unittest.TestCase):
+    def test_staticfield(self):
+        """Requests a well-known static field.
+        """
+        Integer = _pyjava.getclass('java/lang/Integer')
+        size = Integer.getfield('SIZE')
+        self.assertEqual(size.get(), 32)
+
+        String = _pyjava.getclass('java/lang/String')
+        comparator = String.getfield('CASE_INSENSITIVE_ORDER')
+        self.assertIsNotNone(comparator.get())
+
+
 class Test_conversions(unittest.TestCase):
     """Big set of method calls to cover the conversions.
     """

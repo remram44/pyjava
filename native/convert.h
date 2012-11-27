@@ -52,4 +52,42 @@ PyObject *convert_calljava(jobject self, jmethodID method,
 PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         jvalue *params, jclass returntype);
 
+
+typedef struct {
+    jfieldID id;
+    char is_static;
+    int type; /* this is really a enum CVT_JType */
+} JavaFieldDescr;
+
+
+/**
+ * Gets a field descriptor.
+ *
+ * Gets a descriptor from a field of a class, which contains both the jfieldID
+ * and the type of the field (obtained through reflection).
+ *
+ * @return 1 on success, 0 if the field doesn't exist.
+ */
+int convert_getfielddescriptor(JavaFieldDescr *field,
+        jclass javaclass, const char *name);
+
+
+/**
+ * Convert the value of a Java class field as a Python object.
+ *
+ * This function takes the field description; it can be either an object or a
+ * POD, and the correct Get<type>Field() function will be used.
+ */
+PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field);
+
+
+/**
+ * Convert the value of a Java class static field as a Python object.
+ *
+ * This function takes the field description; it can be either an object or a
+ * POD, and the correct GetStatic<type>Field() function will be used.
+ */
+PyObject *convert_getstaticjavafield(jclass javaclass,
+        const JavaFieldDescr *field);
+
 #endif

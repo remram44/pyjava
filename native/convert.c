@@ -430,3 +430,253 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         assert(0); /* can't happen */
     }
 }
+
+int convert_getfielddescriptor(JavaFieldDescr *field,
+        jclass javaclass, const char *name)
+{
+    jobject javafield;
+    jclass javatype;
+    jint modifiers;
+    char is_static;
+    jstring javaname = java_from_utf8(name, strlen(name));
+
+    javafield = (*penv)->CallObjectMethod(
+            penv,
+            javaclass,
+            meth_Class_getField,
+            javaname);
+    if(javafield == NULL)
+    {
+        (*penv)->ExceptionClear(penv);
+        return 0;
+    }
+
+    modifiers = (*penv)->CallIntMethod(
+            penv,
+            javafield, meth_Field_getModifiers);
+    is_static = (*penv)->CallStaticBooleanMethod(
+            penv,
+            class_Modifier, meth_Modifier_isStatic,
+            modifiers) != JNI_FALSE;
+
+    javatype = (*penv)->CallObjectMethod(
+            penv,
+            javafield,
+            meth_Field_getType);
+
+    java_clear_ref(javaname);
+
+    field->id = (*penv)->FromReflectedField(penv, javafield);
+    field->type = (int)convert_id_type(javatype);
+    field->is_static = is_static;
+
+    java_clear_ref(javafield);
+    java_clear_ref(javatype);
+
+    return 1;
+}
+
+PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
+{
+    switch((enum CVT_JType)field->type)
+    {
+    case CVT_J_BOOLEAN:
+        {
+            jboolean ret = (*penv)->GetBooleanField(
+                    penv,
+                    object,
+                    field->id);
+            if(ret == JNI_FALSE)
+            {
+                Py_INCREF(Py_False);
+                return Py_False;
+            }
+            else
+            {
+                Py_INCREF(Py_True);
+                return Py_True;
+            }
+        }
+    case CVT_J_BYTE:
+        {
+            jbyte ret = (*penv)->GetByteField(
+                    penv,
+                    object,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_CHAR:
+        {
+            jchar ret = (*penv)->GetCharField(
+                    penv,
+                    object,
+                    field->id);
+            return PyUnicode_FromFormat("%c", (int)ret);
+        }
+    case CVT_J_SHORT:
+        {
+            jshort ret = (*penv)->GetShortField(
+                    penv,
+                    object,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_INT:
+        {
+            jint ret = (*penv)->GetIntField(
+                    penv,
+                    object,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_LONG:
+        {
+            jlong ret = (*penv)->GetLongField(
+                    penv,
+                    object,
+                    field->id);
+            return PyLong_FromLongLong(ret);
+        }
+    case CVT_J_FLOAT:
+        {
+            jfloat ret = (*penv)->GetFloatField(
+                    penv,
+                    object,
+                    field->id);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_DOUBLE:
+        {
+            jdouble ret = (*penv)->GetDoubleField(
+                    penv,
+                    object,
+                    field->id);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_OBJECT:
+        {
+            jobject ret = (*penv)->GetObjectField(
+                    penv,
+                    object,
+                    field->id);
+            if(java_equals(java_getclass(ret), class_String))
+            {
+                /* Special case: String objects get converted to unicode, which
+                 * makes sense. They can get converted back if need be. */
+                size_t size;
+                const char *utf8 = java_to_utf8(ret, &size);
+                return PyUnicode_FromStringAndSize(
+                        utf8,
+                        size);
+            }
+            else
+                return javawrapper_wrap_instance(ret);
+        }
+    case CVT_J_VOID:
+    default:
+        assert(0); /* can't happen */
+    }
+}
+
+PyObject *convert_getstaticjavafield(jclass javaclass,
+        const JavaFieldDescr *field)
+{
+    switch((enum CVT_JType)field->type)
+    {
+    case CVT_J_BOOLEAN:
+        {
+            jboolean ret = (*penv)->GetStaticBooleanField(
+                    penv,
+                    javaclass,
+                    field->id);
+            if(ret == JNI_FALSE)
+            {
+                Py_INCREF(Py_False);
+                return Py_False;
+            }
+            else
+            {
+                Py_INCREF(Py_True);
+                return Py_True;
+            }
+        }
+    case CVT_J_BYTE:
+        {
+            jbyte ret = (*penv)->GetStaticByteField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_CHAR:
+        {
+            jchar ret = (*penv)->GetStaticCharField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyUnicode_FromFormat("%c", (int)ret);
+        }
+    case CVT_J_SHORT:
+        {
+            jshort ret = (*penv)->GetStaticShortField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_INT:
+        {
+            jint ret = (*penv)->GetStaticIntField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyInt_FromLong(ret);
+        }
+    case CVT_J_LONG:
+        {
+            jlong ret = (*penv)->GetStaticLongField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyLong_FromLongLong(ret);
+        }
+    case CVT_J_FLOAT:
+        {
+            jfloat ret = (*penv)->GetStaticFloatField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_DOUBLE:
+        {
+            jdouble ret = (*penv)->GetStaticDoubleField(
+                    penv,
+                    javaclass,
+                    field->id);
+            return PyFloat_FromDouble(ret);
+        }
+    case CVT_J_OBJECT:
+        {
+            jobject ret = (*penv)->GetStaticObjectField(
+                    penv,
+                    javaclass,
+                    field->id);
+            if(java_equals(java_getclass(ret), class_String))
+            {
+                /* Special case: String objects get converted to unicode, which
+                 * makes sense. They can get converted back if need be. */
+                size_t size;
+                const char *utf8 = java_to_utf8(ret, &size);
+                return PyUnicode_FromStringAndSize(
+                        utf8,
+                        size);
+            }
+            else
+                return javawrapper_wrap_instance(ret);
+        }
+    case CVT_J_VOID:
+    default:
+        assert(0); /* can't happen */
+    }
+}

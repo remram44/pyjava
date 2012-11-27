@@ -26,8 +26,6 @@ class _UnboundJavaMethod(object):
         self.__method = method
 
     def __call__(self, jself, *args):
-        # TODO : check type of first argument, like Python does, or
-        # raise TypeError
         return self.__method.call(jself, *args) # might raise NoMatchingMethod
 
 

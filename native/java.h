@@ -114,6 +114,7 @@ extern jstring str_utf8; /* "UTF-8" */
 /* java.lang.Class */
 extern jclass class_Class;
     extern jmethodID meth_Class_getConstructors;
+    extern jmethodID meth_Class_getField;
     extern jmethodID meth_Class_getMethods;
     extern jmethodID meth_Class_isPrimitive;
 
@@ -127,10 +128,14 @@ extern jclass class_String;
     extern jmethodID meth_String_getBytes;
 
 /* java.lang.reflect.Method */
-    extern jmethodID meth_Method_getParameterTypes;
-    extern jmethodID meth_Method_getName;
-    extern jmethodID meth_Method_getReturnType;
     extern jmethodID meth_Method_getModifiers;
+    extern jmethodID meth_Method_getName;
+    extern jmethodID meth_Method_getParameterTypes;
+    extern jmethodID meth_Method_getReturnType;
+
+/* java.lang.reflect.Field */
+    extern jmethodID meth_Field_getModifiers;
+    extern jmethodID meth_Field_getType;
 
 /* java.lang.reflect.Constructor */
     extern jmethodID meth_Constructor_getParameterTypes;

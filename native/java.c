@@ -84,6 +84,7 @@ jstring str_utf8; /* "UTF-8" */
 /* java.lang.Class */
 jclass class_Class;
     jmethodID meth_Class_getConstructors;
+    jmethodID meth_Class_getField;
     jmethodID meth_Class_getMethods;
     jmethodID meth_Class_isPrimitive;
 
@@ -102,6 +103,10 @@ jclass class_String;
     jmethodID meth_Method_getParameterTypes;
     jmethodID meth_Method_getReturnType;
 
+/* java.lang.reflect.Field */
+    jmethodID meth_Field_getModifiers;
+    jmethodID meth_Field_getType;
+
 /* java.lang.reflect.Constructor */
     jmethodID meth_Constructor_getParameterTypes;
 
@@ -111,16 +116,19 @@ jclass class_Modifier;
 
 void java_init(void)
 {
-    jclass class_Method, class_Constructor;
+    jclass class_Method, class_Field, class_Constructor;
 
     class_Class = (*penv)->FindClass(
             penv, "java/lang/Class");
-    meth_Class_getMethods = (*penv)->GetMethodID(
-            penv, class_Class, "getMethods",
-            "()[Ljava/lang/reflect/Method;");
     meth_Class_getConstructors = (*penv)->GetMethodID(
             penv, class_Class, "getConstructors",
             "()[Ljava/lang/reflect/Constructor;");
+    meth_Class_getField = (*penv)->GetMethodID(
+            penv, class_Class, "getField",
+            "(Ljava/lang/String;)Ljava/lang/reflect/Field;");
+    meth_Class_getMethods = (*penv)->GetMethodID(
+            penv, class_Class, "getMethods",
+            "()[Ljava/lang/reflect/Method;");
     meth_Class_isPrimitive = (*penv)->GetMethodID(
             penv, class_Class, "isPrimitive",
             "()Z");
@@ -153,6 +161,15 @@ void java_init(void)
             "()[Ljava/lang/Class;");
     meth_Method_getReturnType = (*penv)->GetMethodID(
             penv, class_Method, "getReturnType",
+            "()Ljava/lang/Class;");
+
+    class_Field = (*penv)->FindClass(
+            penv, "java/lang/reflect/Field");
+    meth_Field_getModifiers = (*penv)->GetMethodID(
+            penv, class_Field, "getModifiers",
+            "()I");
+    meth_Field_getType = (*penv)->GetMethodID(
+            penv, class_Field, "getType",
             "()Ljava/lang/Class;");
 
     class_Constructor = (*penv)->FindClass(
