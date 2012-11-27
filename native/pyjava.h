@@ -6,6 +6,6 @@
 
 extern PyObject *Err_Base;
 extern PyObject *Err_ClassNotFound;
-extern PyObject *Err_NoMatchingMethod;
+extern PyObject *Err_NoMatchingOverload;
 
 #endif

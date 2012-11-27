@@ -93,7 +93,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
     if(self->overloads == NULL)
     {
         PyErr_Format(
-                Err_NoMatchingMethod,
+                Err_NoMatchingOverload,
                 "no visible method \"%s\"",
                 self->name);
         return NULL;
@@ -107,7 +107,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
     if(matching_method == NULL)
     {
         PyErr_Format(
-                Err_NoMatchingMethod,
+                Err_NoMatchingOverload,
                 "%u methods \"%s\" with %d parameters (no match)",
                 nonmatchs, self->name, nbargs);
         return NULL;
@@ -428,7 +428,7 @@ static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
     if(self->constructors == NULL)
     {
         PyErr_SetString(
-                Err_NoMatchingMethod,
+                Err_NoMatchingOverload,
                 "no visible constructor");
         return NULL;
     }
@@ -441,7 +441,7 @@ static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
     if(matching_method == NULL)
     {
         PyErr_Format(
-                Err_NoMatchingMethod,
+                Err_NoMatchingOverload,
                 "%u constructors with %d parameters (no match)",
                 nonmatchs, nbargs);
         return NULL;

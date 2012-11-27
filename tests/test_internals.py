@@ -85,6 +85,19 @@ class Test_call(unittest.TestCase):
         sin = Math.getmethod('sin')
         self.assertAlmostEqual(sin.call(math.pi/2), 1.0)
 
+    def test_badoverload(self):
+        """Calls an existing method but with wrong argument types.
+        """
+        Math = _pyjava.getclass('java/lang/Math')
+        sin = Math.getmethod('sin')
+        self.assertRaises(
+                _pyjava.NoMatchingOverload,
+                sin.call,
+                4, 2)
+        self.assertRaises(
+                _pyjava.NoMatchingOverload,
+                sin.call)
+
 
 class Test_getfield(unittest.TestCase):
     def test_field(self):

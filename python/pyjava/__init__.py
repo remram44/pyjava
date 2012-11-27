@@ -2,11 +2,11 @@ import _pyjava
 
 
 # Exception classes
-from _pyjava import Error, ClassNotFound, NoMatchingMethod
+from _pyjava import Error, ClassNotFound, NoMatchingOverload
 
 
 __all__ = [
-        'Error', 'ClassNotFound', 'NoMatchingMethod',
+        'Error', 'ClassNotFound', 'NoMatchingOverload',
         'start', 'getclass']
 
 
@@ -15,7 +15,7 @@ __all__ = [
 class _UnboundJavaMethod(object):
     """An unbound Java method.
 
-    You can call it like a regular method. It might raise NoMatchingMethod if
+    You can call it like a regular method. It might raise NoMatchingOverload if
     the parameters number or types are not compatible with one of the
     overloads.
 
@@ -26,13 +26,14 @@ class _UnboundJavaMethod(object):
         self.__method = method
 
     def __call__(self, jself, *args):
-        return self.__method.call(jself, *args) # might raise NoMatchingMethod
+        return self.__method.call(jself, *args)
+                # might raise NoMatchingOverload
 
 
 class _BoundJavaMethod(object):
     """A bound Java method.
 
-    You can call it like a regular method. It might raise NoMatchingMethod if
+    You can call it like a regular method. It might raise NoMatchingOverload if
     the parameters number or types are not compatible with one of the
     overloads.
     """
@@ -42,7 +43,7 @@ class _BoundJavaMethod(object):
 
     def __call__(self, *args):
         return self.__method.call(self.__obj, *args)
-                # might raise NoMatchingMethod
+                # might raise NoMatchingOverload
 
 
 # TODO : define __instancecheck__ and __subclasscheck__ to override Python's
@@ -103,7 +104,7 @@ class _JavaClass(type):
         try:
             return _UnboundJavaMethod(
                     self.__dict__['_pyjava__javaclass'].getmethod(attr))
-        except NoMatchingMethod:
+        except AttributeError:
             pass
         # TODO : static fields
         raise AttributeError
@@ -131,7 +132,7 @@ class _JavaObject(object):
         if _javaobject is not None:
             self._pyjava__javaobject = _javaobject
         else:
-            # This might raise NoMatchingMethod
+            # This might raise NoMatchingOverload
             self._pyjava__javaobject = (
                     self._pyjava__javaclass.create(*args))
 
@@ -151,7 +152,7 @@ class _JavaObject(object):
             return _BoundJavaMethod(
                     self._pyjava__javaclass.getmethod(attr),
                     self._pyjava__javaobject)
-        except NoMatchingMethod:
+        except AttributeError:
             pass
         # TODO : non-static fields
         raise AttributeError
