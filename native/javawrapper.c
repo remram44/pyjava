@@ -279,7 +279,7 @@ static PyObject *JavaField_get(JavaField *self, PyObject *args)
     JavaInstance *obj;
     if(self->field.is_static)
     {
-        if(!PyArg_ParseTuple(args, "", &JavaInstance_type, &obj))
+        if(!PyArg_ParseTuple(args, ""))
             return NULL;
         return convert_getstaticjavafield(self->javaclass, &self->field);
     }

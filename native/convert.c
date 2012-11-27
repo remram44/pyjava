@@ -125,6 +125,8 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
             assert(0); /* can't happen */
         }
     }
+    else if(pyobj == Py_None)
+        return 1;
     else
     {
         /* Checks that pyobj is a JavaInstance and unwraps the jclass */
@@ -191,6 +193,8 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
             assert(0); /* can't happen */
         }
     }
+    else if(pyobj == Py_None)
+        javavalue->l = NULL;
     else
     {
         if(javawrapper_unwrap_instance(pyobj, &javavalue->l, NULL))
@@ -302,7 +306,12 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                     penv,
                     self, method,
                     parameters);
-            if(java_equals(java_getclass(ret), class_String))
+            if(ret == NULL)
+            {
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            else if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
@@ -413,7 +422,12 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                     penv,
                     javaclass, method,
                     parameters);
-            if(java_equals(java_getclass(ret), class_String))
+            if(ret == NULL)
+            {
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            else if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
@@ -559,7 +573,12 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
                     penv,
                     object,
                     field->id);
-            if(java_equals(java_getclass(ret), class_String))
+            if(ret == NULL)
+            {
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            else if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
@@ -662,7 +681,12 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
                     penv,
                     javaclass,
                     field->id);
-            if(java_equals(java_getclass(ret), class_String))
+            if(ret == NULL)
+            {
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            else if(java_equals(java_getclass(ret), class_String))
             {
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */

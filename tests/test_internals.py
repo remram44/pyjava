@@ -135,12 +135,31 @@ class Test_accessfield(unittest.TestCase):
         comparator = String.getfield('CASE_INSENSITIVE_ORDER')
         self.assertIsNotNone(comparator.get())
 
+    def test_testclass(self):
+        cl = _pyjava.getclass(
+                'pyjavatest/test_fields/AccessField')
+        obj = cl.create()
+
+        a = cl.getfield('a')
+        self.assertEqual(a.get(), 7)
+        b = cl.getfield('b')
+        self.assertEqual(b.get(), 'test')
+        c = cl.getfield('c')
+        self.assertEqual(c.get(), None)
+        d = cl.getfield('d')
+        self.assertEqual(d.get(obj), -7)
+        e = cl.getfield('e')
+        self.assertEqual(e.get(obj), None)
+        f = cl.getfield('f')
+        self.assertEqual(f.get(obj), '4')
+
 
 class Test_conversions(unittest.TestCase):
     """Big set of method calls to cover the conversions.
     """
     def setUp(self):
-        self._jcl = _pyjava.getclass('pyjavatest/tests/CallMethod_Conversions')
+        self._jcl = _pyjava.getclass(
+                'pyjavatest/test_conversions/CallMethod_Conversions')
         self._jo = self._jcl.create()
 
     def test_v_ii(self):
@@ -186,6 +205,14 @@ class Test_conversions(unittest.TestCase):
         self.assertTrue(isinstance(o, _pyjava.JavaInstance))
         m = self._jcl.getmethod('_s_So')
         self.assertEqual(m.call(u'\x00\u252C\u2500\u2500\u252C', o), -15)
+
+    def test_o_S(self):
+        m = self._jcl.getmethod('_o_S')
+        self.assertEqual(m.call(None), None)
+
+    def test_v_o(self):
+        m = self._jcl.getmethod('v_o')
+        self.assertIsNone(m.call(self._jo, None))
 
     def test_C_(self):
         g = self._jcl.getmethod('_C_')
