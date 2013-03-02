@@ -110,6 +110,10 @@ static PyMethodDef methods[] = {
     "getclass(str) -> JavaClass\n"
     "\n"
     "Find the desired class and returns a wrapper."},
+    {"issubclass",  javawrapper_issubclass, METH_VARARGS,
+    "issubclass(A: javaclass, B: javaclass) -> bool\n"
+    "\n"
+    "Checks whether A is a subclass of B."},
     {NULL, NULL, 0, NULL}
 };
 

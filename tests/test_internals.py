@@ -57,6 +57,22 @@ class Test_getmethod(unittest.TestCase):
                 String.getmethod,
                 'nonexistentMethod')
 
+    def test_issubclass(self):
+        """Requests well-known classes and tests issubclass().
+        """
+        Object = _pyjava.getclass('java/lang/Object')
+        String = _pyjava.getclass('java/lang/String')
+        Class = _pyjava.getclass('java/lang/Class')
+        self.assertTrue(_pyjava.issubclass(String, String))
+        self.assertTrue(_pyjava.issubclass(Object, Object))
+        self.assertTrue(_pyjava.issubclass(Class, Class))
+        self.assertFalse(_pyjava.issubclass(Object, String))
+        self.assertFalse(_pyjava.issubclass(String, Class))
+        self.assertTrue(_pyjava.issubclass(Class, Object))
+        self.assertFalse(_pyjava.issubclass(Class, String))
+        self.assertTrue(_pyjava.issubclass(String, Object))
+        self.assertFalse(_pyjava.issubclass(Object, Class))
+
 
 class Test_call(unittest.TestCase):
     def test_constructor(self):
