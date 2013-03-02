@@ -90,15 +90,6 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
 
     java_Method *matching_method;
 
-    if(self->overloads == NULL)
-    {
-        PyErr_Format(
-                Err_NoMatchingOverload,
-                "no visible method \"%s\"",
-                self->name);
-        return NULL;
-    }
-
     matching_method = find_matching_overload(self->overloads,
             args, &nonmatchs);
 
@@ -148,7 +139,7 @@ static void JavaMethod_dealloc(PyObject *v_self)
 {
     JavaMethod *self = (JavaMethod*)v_self;
 
-    if(self->overloads)
+    if(self->overloads != NULL)
         java_free_methods(self->overloads);
 
     self->ob_type->tp_free(self);
