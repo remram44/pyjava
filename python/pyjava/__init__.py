@@ -10,8 +10,6 @@ __all__ = [
         'start', 'getclass']
 
 
-# TODO : this could be a descriptor whose __get__ method return a
-# _BoundJavaMethod... I think
 class _UnboundJavaMethod(object):
     """An unbound Java method.
 
@@ -23,11 +21,11 @@ class _UnboundJavaMethod(object):
     and static methods.
     """
     def __init__(self, method):
-        self.__method = method
+        self._pyjava_method = method
 
     def __call__(self, jself, *args):
-        return self.__method.call(jself, *args)
-                # might raise NoMatchingOverload
+        return self._pyjava_method.call(jself, *args)
+                # might raise NoMatchingMethod
 
 
 class _BoundJavaMethod(object):
@@ -38,16 +36,17 @@ class _BoundJavaMethod(object):
     overloads.
     """
     def __init__(self, method, obj):
-        self.__method = method
-        self.__obj = obj
+        self._pyjava_method = method
+        self._pyjava_obj = obj
 
     def __call__(self, *args):
-        return self.__method.call(self.__obj, *args)
+        return self._pyjava_method.call(self.__obj, *args)
                 # might raise NoMatchingOverload
 
 
-# TODO : define __instancecheck__ and __subclasscheck__ to override Python's
+# Here we define __instancecheck__ and __subclasscheck__ to override Python's
 # isinstance() and issubclass() builtins
+#
 # PEP 3119:
 #   The primary mechanism proposed here is to allow overloading the built-in
 #   functions isinstance() and issubclass(). The overloading works as follows:
@@ -58,52 +57,19 @@ class _BoundJavaMethod(object):
 #     C.__subclasscheck__ exists, and if so, calls C.__subclasscheck__(D)
 #     instead of its normal implementation.
 
-# This is the "special" java.lang.Class class
-class _JavaClass(type):
-    _JavaObject_constructed = False
-
-    def __new__(*args, **kwargs):
-        if len(args) == 4 and not _JavaClass._JavaObject_constructed:
-            # This class may only be used once as __metaclass__:
-            # to construct _JavaObject (just below)
-            _JavaClass._JavaObject_constructed = True
-            args[3].update(dict(_pyjava__javaclass = None)) # initialization of
-                    # this field happens in start(), as getclass() needs a
-                    # running VM
-            cls = type.__new__(
-                    _JavaClass,
-                    args[1],
-                    (),
-                    args[3])
-        elif len(args) == 4 and _JavaClass._JavaObject_constructed:
-            raise Error("_JavaClass shouldn't be used as __metaclass__")
-        elif len(args) != 1:
-            raise TypeError("_JavaClass only accepts keyword arguments "
-                            "_javaclass and _classname")
-        elif set(kwargs.keys()) == set(['_javaclass', '_classname']):
-            # It is used with the keyword argument _javaclass to construct
-            # classes
-            cls = type.__new__(
-                    _JavaClass,
-                    kwargs['_classname'],
-                    (),
-                    dict(_pyjava__javaclass=kwargs['_javaclass']))
-        else:
-            raise TypeError("Invalid keyword arguments to _JavaClass")
-
-        return cls
-
-    def __init__(self, *args, **kwargs):
-        # Will be called after __new__
-        # We just override type.__init__ so that it accepts the arguments meant
-        # for __new__
-        pass
+# This is the metaclass, i.e. objects of this type represent Java classes
+# It is NOT java.lang.Class however
+class _JavaClass(object):
+    def __init__(self, classname, javaclass):
+        self.__dict__['_pyjava_classname'] = classname
+        self.__dict__['_pyjava_javaclass'] = javaclass
 
     def __getattr__(self, attr):
         # Method
         try:
+            # Use __dict__ to avoid infinite recursion
             return _UnboundJavaMethod(
-                    self.__dict__['_pyjava__javaclass'].getmethod(attr))
+                    self.__dict__['_pyjava_javaclass'].getmethod(attr))
         except AttributeError:
             pass
         # TODO : static fields
@@ -113,28 +79,43 @@ class _JavaClass(type):
         # TODO : static fields
         pass
 
-
-# This is the root Java class, java.lang.Object
-# It is also instance of the meta-class java.lang.Class
-class _JavaObject(object):
-    __metaclass__ = _JavaClass
-
-    def __init__(self, *args, **kwargs):
-        # We accept a keyword-only argument _javaobject=None
-        try:
-            _javaobject = kwargs.pop('_javaobject')
-        except KeyError:
-            _javaobject = None
-        if kwargs:
-            raise TypeError('_JavaObject.__init__ got an unexpected '
-                            'keyword argument %s' % kwargs.keys()[0])
-
-        if _javaobject is not None:
-            self._pyjava__javaobject = _javaobject
+    def __instancecheck__(self, inst):
+        """Called to check if an object is an instance of this class.
+        """
+        if isinstance(inst, _JavaObject):
+            return _pyjava.issubclass(
+                    inst.__dict__['_pyjava_class'].__dict__['_pyjava_javaclass'],
+                    self.__dict__['_pyjava_javaclass'])
         else:
-            # This might raise NoMatchingOverload
-            self._pyjava__javaobject = (
-                    self._pyjava__javaclass.create(*args))
+            return False
+
+    def __subclasscheck__(self, other):
+        """Called to check if a class is a subclass of this class
+        """
+        if isinstance(other, _JavaClass):
+            return _pyjava.issubclass(other.__dict__['_pyjava_javaclass'],
+                                      self.__dict__['_pyjava_javaclass'])
+        elif isinstance(other, type): # A non-Java class
+            return False
+        else: # Not a class
+            raise TypeError("issubclass() arg 2 must be a class")
+
+    def __call__(self, *args):
+        """Called to instanciate this class.
+        """
+        return _JavaObject(
+                self.__dict__['_pyjava_javaclass'],
+                self.__dict__['_pyjava_javaclass'].create(*args))
+                # This might raise NoMatchingOverload
+
+
+# This is the real class of all Java objects, even though we pretend (by
+# overriding isinstance() and issubclass() behaviors) that they are instances
+# of instances of _JavaClass (which we pretend are classes)
+class _JavaObject(object):
+    def __init__(self, klass, javaobject):
+        self.__dict__['_pyjava_class'] = klass
+        self.__dict__['_pyjava_javaobject'] = javaobject
 
     # This is called when an attribute is assigned
     # If it matches a Java field, update it, else call object.__setattr__
@@ -150,8 +131,8 @@ class _JavaObject(object):
         # Method
         try:
             return _BoundJavaMethod(
-                    self._pyjava__javaclass.getmethod(attr),
-                    self._pyjava__javaobject)
+                    self.__dict__['_pyjava__javaclass'].getmethod(attr),
+                    self.__dict__['_pyjava__javaobject'])
         except AttributeError:
             pass
         # TODO : non-static fields
@@ -169,13 +150,8 @@ def start(path, *args):
     except Error:
         raise Error("Unable to start Java VM with path %s" % path)
 
-    _JavaObject._pyjava__javaclass = _pyjava.getclass('java/lang/Object')
 
-
-_known_classes = {
-        'java.lang.Object': _JavaObject,
-        'java.lang.Class': _JavaClass}
-
+_known_classes = dict()
 
 def getclass(classname):
     try:
@@ -185,6 +161,6 @@ def getclass(classname):
         jni_classname = classname.replace('.', '/')
 
         cls = _pyjava.getclass(jni_classname) # might raise ClassNotFound
-        cls = _JavaClass(_classname=classname, _javaclass=cls)
+        cls = _JavaClass(classname, cls)
         _known_classes[classname] = cls
         return cls
