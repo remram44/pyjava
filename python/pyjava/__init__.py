@@ -131,12 +131,26 @@ class _JavaObject(object):
         # Method
         try:
             return _BoundJavaMethod(
-                    self.__dict__['_pyjava__javaclass'].getmethod(attr),
-                    self.__dict__['_pyjava__javaobject'])
+                    self.__dict__['_pyjava_javaclass'].getmethod(attr),
+                    self.__dict__['_pyjava_javaobject'])
         except AttributeError:
             pass
         # TODO : non-static fields
         raise AttributeError
+
+    def __eq__(self, other):
+        """Tests that the two objects are the same.
+
+        This tests equality is the Java sense, i.e. that the references are
+        equal (Java has no operator overriding).
+        In Java, its behaviors is similar to that of Python's "is" operator,
+        but here we have to use == ("is" cannot be overridden).
+        """
+        if isinstance(other, _JavaObject):
+            return _pyjava.issameobject(
+                    other.__dict__['_pyjava_javaobject'],
+                    self.__dict__['_pyjava_javaobject'])
+        return False
 
 
 def start(path, *args):

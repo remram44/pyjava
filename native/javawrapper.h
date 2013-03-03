@@ -40,4 +40,10 @@ PyObject *javawrapper_wrap_instance(jobject javaobject);
  */
 PyObject *javawrapper_issubclass(PyObject *self, PyObject *args);
 
+
+/**
+ * The _pyjava.issameobject() function.
+ */
+PyObject *javawrapper_issameobject(PyObject *self, PyObject *args);
+
 #endif

@@ -73,6 +73,25 @@ class Test_getmethod(unittest.TestCase):
         self.assertTrue(_pyjava.issubclass(String, Object))
         self.assertFalse(_pyjava.issubclass(Object, Class))
 
+    def test_issameobject(self):
+        """Tests for equality of references.
+        """
+        jcl = _pyjava.getclass(
+                'pyjavatest/ObjFactory')
+        makeObject = jcl.getmethod('makeObject')
+        obj1 = makeObject.call(1)
+        obj2 = makeObject.call(2)
+        obj3 = makeObject.call(1)
+        self.assertTrue(_pyjava.issameobject(obj1, obj1))
+        self.assertTrue(_pyjava.issameobject(obj2, obj2))
+        self.assertTrue(_pyjava.issameobject(obj3, obj3))
+        self.assertFalse(_pyjava.issameobject(obj1, obj2))
+        self.assertFalse(_pyjava.issameobject(obj2, obj3))
+        self.assertTrue(_pyjava.issameobject(obj3, obj1))
+        self.assertFalse(_pyjava.issameobject(obj2, obj1))
+        self.assertFalse(_pyjava.issameobject(obj3, obj2))
+        self.assertTrue(_pyjava.issameobject(obj1, obj3))
+
 
 class Test_call(unittest.TestCase):
     def test_constructor(self):
