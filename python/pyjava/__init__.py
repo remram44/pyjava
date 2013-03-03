@@ -10,6 +10,23 @@ __all__ = [
         'start', 'getclass']
 
 
+def _wrap(obj):
+    """Wraps internal objects returned from Java.
+
+    Wraps objects of classes _pyjava.JavaInstance and _pyjava.JavaClass
+    defined in C code as _JavaClass and _JavaObject defined here in Python.
+    """
+    if isinstance(obj, _pyjava.JavaClass):
+        return _JavaClass(obj.getclassname(), obj)
+    elif isinstance(obj, _pyjava.JavaInstance):
+        javaclass = obj.getclass()
+        return _JavaObject(
+                _JavaClass(javaclass.getclassname(), javaclass),
+                obj)
+    else:
+        return obj
+
+
 class _UnboundJavaMethod(object):
     """An unbound Java method.
 
@@ -23,8 +40,8 @@ class _UnboundJavaMethod(object):
     def __init__(self, method):
         self._pyjava_method = method
 
-    def __call__(self, jself, *args):
-        return self._pyjava_method.call(jself, *args)
+    def __call__(self, *args):
+        return _wrap(self._pyjava_method.call(*args))
                 # might raise NoMatchingMethod
 
 
@@ -40,7 +57,7 @@ class _BoundJavaMethod(object):
         self._pyjava_obj = obj
 
     def __call__(self, *args):
-        return self._pyjava_method.call(self.__obj, *args)
+        return _wrap(self._pyjava_method.call(self._pyjava_obj, *args))
                 # might raise NoMatchingOverload
 
 
@@ -104,7 +121,7 @@ class _JavaClass(object):
         """Called to instanciate this class.
         """
         return _JavaObject(
-                self.__dict__['_pyjava_javaclass'],
+                self,
                 self.__dict__['_pyjava_javaclass'].create(*args))
                 # This might raise NoMatchingOverload
 
@@ -128,10 +145,12 @@ class _JavaObject(object):
     # We attempt to find a field or a method in the Java class or raise
     # AttributeError
     def __getattr__(self, attr):
-        # Method
+    # Method
+        javaclass = (self.__dict__['_pyjava_class']
+                .__dict__['_pyjava_javaclass'])
         try:
             return _BoundJavaMethod(
-                    self.__dict__['_pyjava_javaclass'].getmethod(attr),
+                    javaclass.getmethod(attr),
                     self.__dict__['_pyjava_javaobject'])
         except AttributeError:
             pass
@@ -165,16 +184,10 @@ def start(path, *args):
         raise Error("Unable to start Java VM with path %s" % path)
 
 
-_known_classes = dict()
-
 def getclass(classname):
-    try:
-        return _known_classes[classname]
-    except KeyError:
-        # Convert from the 'usual' syntax to the 'JNI' syntax
-        jni_classname = classname.replace('.', '/')
+    # Convert from the 'usual' syntax to the 'JNI' syntax
+    jni_classname = classname.replace('.', '/')
 
-        cls = _pyjava.getclass(jni_classname) # might raise ClassNotFound
-        cls = _JavaClass(classname, cls)
-        _known_classes[classname] = cls
-        return cls
+    cls = _pyjava.getclass(jni_classname) # might raise ClassNotFound
+    cls = _JavaClass(classname, cls)
+    return cls
