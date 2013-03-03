@@ -63,6 +63,7 @@ static enum CVT_JType convert_id_type(jclass javatype)
                 return i;
         }
         assert(0); /* can't happen */
+        return 0;
     }
     else
         return CVT_J_OBJECT;
@@ -146,6 +147,8 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
 
         return 0;
     }
+    assert(0); /* can't happen */
+    return 0;
 }
 
 void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
@@ -316,7 +319,7 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
                 size_t size;
-                const char *utf8 = java_to_utf8(ret, &size);
+                char *utf8 = java_to_utf8(ret, &size);
                 PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
@@ -328,6 +331,7 @@ PyObject *convert_calljava(jobject self, jmethodID method,
         }
     default:
         assert(0); /* can't happen */
+        return NULL;
     }
 }
 
@@ -434,7 +438,7 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
                 size_t size;
-                const char *utf8 = java_to_utf8(ret, &size);
+                char *utf8 = java_to_utf8(ret, &size);
                 PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
@@ -446,6 +450,7 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         }
     default:
         assert(0); /* can't happen */
+        return NULL;
     }
 }
 
@@ -587,7 +592,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
                 size_t size;
-                const char *utf8 = java_to_utf8(ret, &size);
+                char *utf8 = java_to_utf8(ret, &size);
                 PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
@@ -600,6 +605,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
     case CVT_J_VOID:
     default:
         assert(0); /* can't happen */
+        return NULL;
     }
 }
 
@@ -697,7 +703,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
                 /* Special case: String objects get converted to unicode, which
                  * makes sense. They can get converted back if need be. */
                 size_t size;
-                const char *utf8 = java_to_utf8(ret, &size);
+                char *utf8 = java_to_utf8(ret, &size);
                 PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
@@ -710,5 +716,6 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
     case CVT_J_VOID:
     default:
         assert(0); /* can't happen */
+        return NULL;
     }
 }

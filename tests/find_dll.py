@@ -5,7 +5,7 @@ import sys
 
 
 # Number of bits of Python
-if sys.maxsize <= 2**32:
+if sys.maxsize <= 2 ** 32:
     bits = 32
 else:
     bits = 64

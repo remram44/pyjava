@@ -49,6 +49,7 @@ class Test_getmethod(unittest.TestCase):
         This should be detected when accessing.
         """
         String = pyjava.getclass('java.lang.String')
+
         def test_func():
             m = String.nonexistentMethod
         self.assertRaises(
@@ -76,7 +77,7 @@ class Test_call(unittest.TestCase):
         """Calls a well-known static method.
         """
         Math = pyjava.getclass('java.lang.Math')
-        self.assertAlmostEqual(Math.sin(math.pi/2), 1.0)
+        self.assertAlmostEqual(Math.sin(math.pi / 2), 1.0)
 
     def test_badoverload(self):
         """Calls an existing method but with wrong argument types.
