@@ -110,6 +110,7 @@ class Test_call(unittest.TestCase):
         self.assertIsNotNone(vector)
         capacity = Vector.getmethod('capacity')
         self.assertEqual(capacity.call(vector), 10)
+        self.assertEqual(vector.getclass().getclassname(), u'java.util.Vector')
 
     def test_method(self):
         """Calls a well-known method on a wrapper returned by a static method.
