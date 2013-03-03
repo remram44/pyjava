@@ -147,6 +147,7 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
 
         return 0;
     }
+    assert(0); /* can't happen */
     return 0;
 }
 
@@ -330,7 +331,7 @@ PyObject *convert_calljava(jobject self, jmethodID method,
         }
     default:
         assert(0); /* can't happen */
-        return Py_None;
+        return NULL;
     }
 }
 
@@ -449,7 +450,7 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         }
     default:
         assert(0); /* can't happen */
-        return Py_None;
+        return NULL;
     }
 }
 
@@ -604,8 +605,8 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
     case CVT_J_VOID:
     default:
         assert(0); /* can't happen */
+        return NULL;
     }
-    return Py_None;
 }
 
 PyObject *convert_getstaticjavafield(jclass javaclass,
@@ -715,6 +716,6 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
     case CVT_J_VOID:
     default:
         assert(0); /* can't happen */
-        return Py_None;
+        return NULL;
     }
 }
