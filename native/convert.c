@@ -317,9 +317,11 @@ PyObject *convert_calljava(jobject self, jmethodID method,
                  * makes sense. They can get converted back if need be. */
                 size_t size;
                 const char *utf8 = java_to_utf8(ret, &size);
-                return PyUnicode_FromStringAndSize(
+                PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
+                free(utf8);
+                return unicode;
             }
             else
                 return javawrapper_wrap_instance(ret);
@@ -433,9 +435,11 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
                  * makes sense. They can get converted back if need be. */
                 size_t size;
                 const char *utf8 = java_to_utf8(ret, &size);
-                return PyUnicode_FromStringAndSize(
+                PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
+                free(utf8);
+                return unicode;
             }
             else
                 return javawrapper_wrap_instance(ret);
@@ -584,9 +588,11 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
                  * makes sense. They can get converted back if need be. */
                 size_t size;
                 const char *utf8 = java_to_utf8(ret, &size);
-                return PyUnicode_FromStringAndSize(
+                PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
+                free(utf8);
+                return unicode;
             }
             else
                 return javawrapper_wrap_instance(ret);
@@ -692,9 +698,11 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
                  * makes sense. They can get converted back if need be. */
                 size_t size;
                 const char *utf8 = java_to_utf8(ret, &size);
-                return PyUnicode_FromStringAndSize(
+                PyObject *unicode = PyUnicode_FromStringAndSize(
                         utf8,
                         size);
+                free(utf8);
+                return unicode;
             }
             else
                 return javawrapper_wrap_instance(ret);
