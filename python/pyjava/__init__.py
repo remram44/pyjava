@@ -112,9 +112,9 @@ class _JavaClass(object):
         if isinstance(other, _JavaClass):
             return _pyjava.issubclass(other.__dict__['_pyjava_javaclass'],
                                       self.__dict__['_pyjava_javaclass'])
-        elif isinstance(other, type): # A non-Java class
+        elif isinstance(other, type):  # A non-Java class
             return False
-        else: # Not a class
+        else:  # Not a class
             raise TypeError("issubclass() arg 2 must be a class")
 
     def __call__(self, *args):
@@ -188,6 +188,6 @@ def getclass(classname):
     # Convert from the 'usual' syntax to the 'JNI' syntax
     jni_classname = classname.replace('.', '/')
 
-    cls = _pyjava.getclass(jni_classname) # might raise ClassNotFound
+    cls = _pyjava.getclass(jni_classname)  # might raise ClassNotFound
     cls = _JavaClass(classname, cls)
     return cls

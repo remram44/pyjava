@@ -127,7 +127,7 @@ class Test_call(unittest.TestCase):
         """
         Math = _pyjava.getclass('java/lang/Math')
         sin = Math.getmethod('sin')
-        self.assertAlmostEqual(sin.call(math.pi/2), 1.0)
+        self.assertAlmostEqual(sin.call(math.pi / 2), 1.0)
 
     def test_badoverload(self):
         """Calls an existing method but with wrong argument types.
@@ -260,8 +260,8 @@ class Test_conversions(unittest.TestCase):
 
     def test_C_(self):
         g = self._jcl.getmethod('_C_')
-        C = g.call() # this returns a Class, which should be wrapped as
-                # JavaClass instead of JavaInstance automatically
+        C = g.call()  # this returns a Class, which should be wrapped as
+                      # JavaClass instead of JavaInstance automatically
         self.assertIsNotNone(C)
         o = C.create(17)
         m = C.getmethod('i_')
