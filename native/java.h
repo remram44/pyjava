@@ -112,7 +112,7 @@ jstring java_from_utf8(const char *utf8, size_t size);
  * will be written at that address. It is necessary as the returned string
  * cannot be safely NULL-terminated; it might contain embedded NULL bytes.
  */
-const char *java_to_utf8(jstring str, size_t *newsize);
+char *java_to_utf8(jstring str, size_t *newsize);
 
 
 extern jstring str_utf8; /* "UTF-8" */

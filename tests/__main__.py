@@ -33,7 +33,7 @@ class Program(unittest.TestProgram):
         # Why would you provide TestLoader, TestRunner and all that nonsense if
         # I can't do that without overriding part of main itself?
         if self.testNames is None:
-            self.test = tests = self.testLoader.discover(
+            self.test = self.testLoader.discover(
                     start_dir=start_dir,
                     pattern='test_*.py',
                     top_level_dir=top_level)

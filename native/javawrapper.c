@@ -100,7 +100,7 @@ static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
     {
         PyErr_Format(
                 Err_NoMatchingOverload,
-                "%u methods \"%s\" with %d parameters (no match)",
+                "%zu methods \"%s\" with %zd parameters (no match)",
                 nonmatchs, self->name, nbargs);
         return NULL;
     }
@@ -465,7 +465,7 @@ static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
     {
         PyErr_Format(
                 Err_NoMatchingOverload,
-                "%u constructors with %d parameters (no match)",
+                "%zu constructors with %zd parameters (no match)",
                 nonmatchs, nbargs);
         return NULL;
     }

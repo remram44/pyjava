@@ -1,6 +1,7 @@
 #include "java.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -399,7 +400,7 @@ jstring java_from_utf8(const char *utf8, size_t size)
     return str;
 }
 
-const char *java_to_utf8(jstring str, size_t *newsize)
+char *java_to_utf8(jstring str, size_t *newsize)
 {
     /* byte[] utf8 = string.getBytes("UTF-8"); */
 
