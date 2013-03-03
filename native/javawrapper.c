@@ -50,8 +50,9 @@ static java_Method *find_matching_overload(java_Methods *overloads,
 
     /*
      * Several methods matched the given arguments. We'll use the first method
-     * we found The Java compiler shouldn't let this happen... may be a bug in
-     * the convert module?
+     * we found.
+     * The Java compiler shouldn't let this happen... may be a bug in the
+     * convert module?
      */
     if(nb_matches > 1)
         PyErr_Warn(
@@ -356,6 +357,20 @@ typedef struct {
     java_Methods *constructors;
 } JavaClass;
 
+static PyObject *JavaClass_getclassname(JavaClass *self, PyObject *args)
+{
+    if(!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    {
+        size_t size;
+        const char *classname = java_getclassname(self->javaclass, &size);
+        return PyUnicode_FromStringAndSize(
+                classname,
+                size);
+    }
+}
+
 static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
 {
     const char *name;
@@ -476,6 +491,11 @@ static void JavaClass_dealloc(PyObject *v_self)
 }
 
 static PyMethodDef JavaClass_methods[] = {
+    {"getclassname", (PyCFunction)JavaClass_getclassname, METH_VARARGS,
+    "getclassname() -> str\n"
+    "\n"
+    "Returns the name of this class, for example 'java.lang.String'."
+    },
     {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
     "getmethod(str) -> JavaMethod\n"
     "\n"

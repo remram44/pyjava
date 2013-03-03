@@ -75,6 +75,12 @@ int java_is_subclass(jclass sub, jclass klass);
 
 
 /**
+ * Gets the name of a Java class.
+ */
+const char *java_getclassname(jclass javaclass, size_t *size);
+
+
+/**
  * Clear a local or global ref to a Java object.
  */
 void java_clear_ref(jobject ref);

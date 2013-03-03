@@ -25,10 +25,18 @@ class Test_getclass(unittest.TestCase):
                 'java/lang/Nonexistent')
 
     def test_String(self):
-        """Wraps a well-known class.
+        """Wraps a language class.
         """
         String = _pyjava.getclass('java/lang/String')
         self.assertIsNotNone(String)
+        self.assertEqual(String.getclassname(), u'java.lang.String')
+
+    def test_Reader(self):
+        """Wraps a well-known class.
+        """
+        Reader = _pyjava.getclass('java/io/Reader')
+        self.assertIsNotNone(Reader)
+        self.assertEqual(Reader.getclassname(), u'java.io.Reader')
 
 
 class Test_getmethod(unittest.TestCase):

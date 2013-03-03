@@ -86,6 +86,7 @@ jclass class_Class;
     jmethodID meth_Class_getConstructors;
     jmethodID meth_Class_getField;
     jmethodID meth_Class_getMethods;
+    jmethodID meth_Class_getName;
     jmethodID meth_Class_isPrimitive;
 
 /* java.lang.Object */
@@ -129,6 +130,9 @@ void java_init(void)
     meth_Class_getMethods = (*penv)->GetMethodID(
             penv, class_Class, "getMethods",
             "()[Ljava/lang/reflect/Method;");
+    meth_Class_getName = (*penv)->GetMethodID(
+            penv, class_Class, "getName",
+            "()Ljava/lang/String;");
     meth_Class_isPrimitive = (*penv)->GetMethodID(
             penv, class_Class, "isPrimitive",
             "()Z");
@@ -344,6 +348,18 @@ int java_equals(jobject a, jobject b)
 int java_is_subclass(jclass sub, jclass klass)
 {
     return (*penv)->IsAssignableFrom(penv, sub, klass) != JNI_FALSE;
+}
+
+const char *java_getclassname(jclass javaclass, size_t *size)
+{
+    const char *utf8;
+    jstring classname = (jstring)(*penv)->CallObjectMethod(
+            penv,
+            javaclass,
+            meth_Class_getName);
+    utf8 = java_to_utf8(classname, size);
+    java_clear_ref(classname);
+    return utf8;
 }
 
 void java_clear_ref(jobject ref)
