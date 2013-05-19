@@ -6,7 +6,7 @@ import unittest
 top_level = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 start_dir = os.path.join(top_level, 'tests')
 if not top_level in sys.path:
-    sys.path.append(top_level)
+    sys.path.insert(0, top_level)
 
 
 import _pyjava
