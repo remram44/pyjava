@@ -24,5 +24,4 @@ def getclass(classname):
     jni_classname = classname.replace('.', '/')
 
     cls = _pyjava.getclass(jni_classname)  # might raise ClassNotFound
-    cls = _JavaClass(classname, cls)
     return cls

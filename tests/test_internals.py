@@ -29,41 +29,34 @@ class Test_getclass(unittest.TestCase):
         """
         String = _pyjava.getclass('java/lang/String')
         self.assertIsNotNone(String)
-        self.assertEqual(String.getclassname(), u'java.lang.String')
+        self.assertEqual(String.getName(), u'java.lang.String')
+        self.assertIsInstance(String, _pyjava.JavaClass)
 
     def test_Reader(self):
         """Wraps a well-known class.
         """
         Reader = _pyjava.getclass('java/io/Reader')
         self.assertIsNotNone(Reader)
-        self.assertEqual(Reader.getclassname(), u'java.io.Reader')
+        self.assertEqual(Reader.getName(), u'java.io.Reader')
+        self.assertIsInstance(Reader, _pyjava.JavaClass)
 
 
-class Test_getmethod(unittest.TestCase):
+class Test_get_method(unittest.TestCase):
     def test_method(self):
         """Requests a well-known method.
         """
         String = _pyjava.getclass('java/lang/String')
-        length = String.getmethod('length')
+        length = String.length
         self.assertIsNotNone(length)
+        self.assertTrue(isinstance(length, _pyjava.UnboundMethod))
 
     def test_staticmethod(self):
         """Requests a well-known static method.
         """
         Math = _pyjava.getclass('java/lang/Math')
-        sin = Math.getmethod('sin')
+        sin = Math.sin
         self.assertIsNotNone(sin)
-
-    def test_nonexistent(self):
-        """Requests a wrapper for an unknown method.
-
-        This should be detected when accessing.
-        """
-        String = _pyjava.getclass('java/lang/String')
-        self.assertRaises(
-                AttributeError,
-                String.getmethod,
-                'nonexistentMethod')
+        self.assertTrue(isinstance(sin, _pyjava.UnboundMethod))
 
     def test_issubclass(self):
         """Requests well-known classes and tests issubclass().
@@ -71,34 +64,35 @@ class Test_getmethod(unittest.TestCase):
         Object = _pyjava.getclass('java/lang/Object')
         String = _pyjava.getclass('java/lang/String')
         Class = _pyjava.getclass('java/lang/Class')
-        self.assertTrue(_pyjava.issubclass(String, String))
-        self.assertTrue(_pyjava.issubclass(Object, Object))
-        self.assertTrue(_pyjava.issubclass(Class, Class))
-        self.assertFalse(_pyjava.issubclass(Object, String))
-        self.assertFalse(_pyjava.issubclass(String, Class))
-        self.assertTrue(_pyjava.issubclass(Class, Object))
-        self.assertFalse(_pyjava.issubclass(Class, String))
-        self.assertTrue(_pyjava.issubclass(String, Object))
-        self.assertFalse(_pyjava.issubclass(Object, Class))
+        self.assertTrue(issubclass(String, String))
+        self.assertTrue(issubclass(Object, Object))
+        self.assertTrue(issubclass(Class, Class))
+        self.assertFalse(issubclass(Object, String))
+        self.assertFalse(issubclass(String, Class))
+        self.assertTrue(issubclass(Class, Object))
+        self.assertFalse(issubclass(Class, String))
+        self.assertTrue(issubclass(String, Object))
+        self.assertFalse(issubclass(Object, Class))
 
-    def test_issameobject(self):
+    def test_is_same_object(self):
         """Tests for equality of references.
         """
         jcl = _pyjava.getclass(
                 'pyjavatest/ObjFactory')
-        makeObject = jcl.getmethod('makeObject')
-        obj1 = makeObject.call(1)
-        obj2 = makeObject.call(2)
-        obj3 = makeObject.call(1)
-        self.assertTrue(_pyjava.issameobject(obj1, obj1))
-        self.assertTrue(_pyjava.issameobject(obj2, obj2))
-        self.assertTrue(_pyjava.issameobject(obj3, obj3))
-        self.assertFalse(_pyjava.issameobject(obj1, obj2))
-        self.assertFalse(_pyjava.issameobject(obj2, obj3))
-        self.assertTrue(_pyjava.issameobject(obj3, obj1))
-        self.assertFalse(_pyjava.issameobject(obj2, obj1))
-        self.assertFalse(_pyjava.issameobject(obj3, obj2))
-        self.assertTrue(_pyjava.issameobject(obj1, obj3))
+        makeObject = jcl.makeObject
+        obj1 = makeObject(1)
+        obj2 = makeObject(2)
+        obj3 = makeObject(1)
+        # == here tests Java reference equality, it does not all equals()
+        self.assertTrue(obj1 == obj1)
+        self.assertTrue(obj2 == obj2)
+        self.assertTrue(obj3 == obj3)
+        self.assertFalse(obj1 == obj2)
+        self.assertFalse(obj2 == obj3)
+        self.assertTrue(obj3 == obj1)
+        self.assertFalse(obj2 == obj1)
+        self.assertFalse(obj3 == obj2)
+        self.assertTrue(obj1 == obj3)
 
 
 class Test_call(unittest.TestCase):
@@ -106,65 +100,63 @@ class Test_call(unittest.TestCase):
         """Constructs a Java object from a constructor.
         """
         Vector = _pyjava.getclass('java/util/Vector')
-        vector = Vector.create(10)
+        vector = Vector(10)
         self.assertIsNotNone(vector)
-        capacity = Vector.getmethod('capacity')
-        self.assertEqual(capacity.call(vector), 10)
-        self.assertEqual(vector.getclass().getclassname(), u'java.util.Vector')
+        self.assertEqual(vector.capacity(), 10)
 
     def test_method(self):
         """Calls a well-known method on a wrapper returned by a static method.
         """
         Collections = _pyjava.getclass('java/util/Collections')
         List = _pyjava.getclass('java/util/List')
-        emptyList = Collections.getmethod('emptyList')
-        li = emptyList.call()
-        size = List.getmethod('size')
-        self.assertEqual(size.call(li), 0)
+        emptyList = Collections.emptyList
+        li = emptyList()
+        size = List.size
+        self.assertEqual(size(li), 0)
+        self.assertEqual(li.size(), 0)
 
     def test_staticmethod(self):
         """Calls a well-known static method.
         """
         Math = _pyjava.getclass('java/lang/Math')
-        sin = Math.getmethod('sin')
-        self.assertAlmostEqual(sin.call(math.pi / 2), 1.0)
+        sin = Math.sin
+        self.assertAlmostEqual(sin(math.pi / 2), 1.0)
 
     def test_badoverload(self):
         """Calls an existing method but with wrong argument types.
         """
         Math = _pyjava.getclass('java/lang/Math')
-        sin = Math.getmethod('sin')
-        self.assertRaises(
-                _pyjava.NoMatchingOverload,
-                sin.call,
-                4, 2)
-        self.assertRaises(
-                _pyjava.NoMatchingOverload,
-                sin.call)
+        sin = Math.sin
+        with self.assertRaises(_pyjava.NoMatchingOverload):
+            sin(4, 2)
+        with self.assertRaises(_pyjava.NoMatchingOverload):
+            sin()
 
 
-class Test_getfield(unittest.TestCase):
+class Test_get_field(unittest.TestCase):
     def test_field(self):
-        """TODO
+        """Requests a well-known field.
         """
+        Dimension = _pyjava.getclass('java/awt/Dimension')
+        d = Dimension()
+        self.assertEqual(d.width, 0)
 
     def test_staticfield(self):
         """Requests a well-known static field.
         """
         Collections = _pyjava.getclass('java/util/Collections')
-        empty_list = Collections.getfield('EMPTY_LIST')
+        empty_list = Collections.EMPTY_LIST
         self.assertIsNotNone(empty_list)
+        self.assertEqual(empty_list.size(), 0)
 
     def test_nonexistent(self):
-        """Requests a wrapper for an unknown field.
+        """Requests a wrapper for an unknown field/method.
 
         This should be detected immediately.
         """
         Math = _pyjava.getclass('java/lang/Math')
-        self.assertRaises(
-                AttributeError,
-                Math.getfield,
-                'nonexistentfield')
+        with self.assertRaises(AttributeError):
+            Math.nonExistentField
 
 
 class Test_accessfield(unittest.TestCase):
@@ -172,30 +164,24 @@ class Test_accessfield(unittest.TestCase):
         """Requests a well-known static field.
         """
         Integer = _pyjava.getclass('java/lang/Integer')
-        size = Integer.getfield('SIZE')
-        self.assertEqual(size.get(), 32)
+        size = Integer.SIZE
+        self.assertEqual(size, 32)
 
         String = _pyjava.getclass('java/lang/String')
-        comparator = String.getfield('CASE_INSENSITIVE_ORDER')
-        self.assertIsNotNone(comparator.get())
+        comparator = String.CASE_INSENSITIVE_ORDER
+        self.assertIsNotNone(comparator)
 
     def test_testclass(self):
         cl = _pyjava.getclass(
                 'pyjavatest/test_fields/AccessField')
         obj = cl.create()
 
-        a = cl.getfield('a')
-        self.assertEqual(a.get(), 7)
-        b = cl.getfield('b')
-        self.assertEqual(b.get(), 'test')
-        c = cl.getfield('c')
-        self.assertEqual(c.get(), None)
-        d = cl.getfield('d')
-        self.assertEqual(d.get(obj), -7)
-        e = cl.getfield('e')
-        self.assertEqual(e.get(obj), None)
-        f = cl.getfield('f')
-        self.assertEqual(f.get(obj), '4')
+        self.assertEqual(cl.a, 7)
+        self.assertEqual(cl.b, 'test')
+        self.assertEqual(cl.c, None)
+        self.assertEqual(obj.d, -7)
+        self.assertEqual(obj.e, None)
+        self.assertEqual(obj.f, '4')
 
 
 class Test_conversions(unittest.TestCase):
@@ -204,65 +190,65 @@ class Test_conversions(unittest.TestCase):
     def setUp(self):
         self._jcl = _pyjava.getclass(
                 'pyjavatest/test_conversions/CallMethod_Conversions')
-        self._jo = self._jcl.create()
+        self._jo = self._jcl()
 
     def test_v_ii(self):
-        m = self._jcl.getmethod('v_ii')
-        self.assertIsNone(m.call(self._jo, 12, -5))
+        m = self._jcl.v_ii
+        self.assertIsNone(m(self._jo, 12, -5))
 
     def test_i_fc(self):
-        m = self._jcl.getmethod('i_fc')
-        self.assertEqual(m.call(self._jo, 12.5, u'\u05D0'), -7)
+        m = self._jcl.i_fc
+        self.assertEqual(m(self._jo, 12.5, u'\u05D0'), -7)
 
     def test_b_Bs(self):
-        m = self._jcl.getmethod('_b_Bs')
-        self.assertEqual(m.call(0x42, 13042), False)
+        m = self._jcl._b_Bs
+        self.assertEqual(m(0x42, 13042), False)
 
     def test_c_lS(self):
-        m = self._jcl.getmethod('c_lS')
-        self.assertEqual(m.call(self._jo, -70458L, u'R\xE9mi'), u'\u05D0')
+        m = self._jcl.c_lS
+        self.assertEqual(m(self._jo, -70458L, u'R\xE9mi'), u'\u05D0')
 
     def test_d_iSb(self):
-        m = self._jcl.getmethod('d_iSb')
-        self.assertAlmostEqual(m.call(self._jo, 0, u'', True), 197.9986e17)
+        m = self._jcl.d_iSb
+        self.assertAlmostEqual(m(self._jo, 0, u'', True), 197.9986e17)
 
     def test_f_(self):
-        m = self._jcl.getmethod('_f_')
-        self.assertAlmostEqual(m.call(), -0.07)
+        m = self._jcl._f_
+        self.assertAlmostEqual(m(), -0.07)
 
     def test_S_(self):
-        m = self._jcl.getmethod('S_')
-        self.assertEqual(m.call(self._jo), u'\xE9\xEA\x00\xE8')
+        m = self._jcl.S_
+        self.assertEqual(m(self._jo), u'\xE9\xEA\x00\xE8')
 
     def test_B_loi(self):
-        g = self._jcl.getmethod('o_b')
-        o = g.call(self._jo, False)
+        g = self._jcl.o_b
+        o = g(self._jo, False)
         self.assertIsNotNone(o)
         self.assertTrue(isinstance(o, _pyjava.JavaInstance))
-        m = self._jcl.getmethod('B_loi')
-        self.assertEqual(m.call(self._jo, 142005L, o, -100), 0x20)
+        m = self._jcl.B_loi
+        self.assertEqual(m(self._jo, 142005L, o, -100), 0x20)
 
     def test_s_So(self):
-        g = self._jcl.getmethod('o_b')
-        o = g.call(self._jo, False)
+        g = self._jcl.o_b
+        o = g(self._jo, False)
         self.assertIsNotNone(o)
         self.assertTrue(isinstance(o, _pyjava.JavaInstance))
-        m = self._jcl.getmethod('_s_So')
-        self.assertEqual(m.call(u'\x00\u252C\u2500\u2500\u252C', o), -15)
+        m = self._jcl._s_So
+        self.assertEqual(m(u'\x00\u252C\u2500\u2500\u252C', o), -15)
 
     def test_o_S(self):
-        m = self._jcl.getmethod('_o_S')
-        self.assertEqual(m.call(None), None)
+        m = self._jcl._o_S
+        self.assertEqual(m(None), None)
 
     def test_v_o(self):
-        m = self._jcl.getmethod('v_o')
-        self.assertIsNone(m.call(self._jo, None))
+        m = self._jcl.v_o
+        self.assertIsNone(m(self._jo, None))
 
     def test_C_(self):
-        g = self._jcl.getmethod('_C_')
-        C = g.call()  # this returns a Class, which should be wrapped as
-                      # JavaClass instead of JavaInstance automatically
+        g = self._jcl._C_
+        C = g() # this returns a Class, which should be wrapped as
+                # JavaClass instead of JavaInstance automatically
         self.assertIsNotNone(C)
-        o = C.create(17)
-        m = C.getmethod('i_')
-        self.assertEqual(m.call(o), 42)
+        o = C(17)
+        m = C.i_
+        self.assertEqual(m(o), 42)
