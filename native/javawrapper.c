@@ -67,10 +67,12 @@ static java_Method *find_matching_overload(java_Methods *overloads,
 
 
 /*==============================================================================
- * JavaMethod type.
+ * UnboundMethod type.
  *
- * This is the wrapper returned by JavaClass.getmethod(). It contains the
- * jclass and the name of the method.
+ * This represents an unbound method, i.e. a method obtained from the class.
+ * It has no instance associated with it. When called, it will be matched with
+ * both the static and nonstatic methods of that class. It contains the jclass
+ * and the name of the method.
  * There is no jmethodID here because this object wraps all the Java methods
  * with the same name, and the actual decision will occur when the call is
  * made (and the parameter types are known).
@@ -81,12 +83,12 @@ typedef struct {
     jclass javaclass;
     java_Methods *overloads;
     char name[1];
-} JavaMethod;
+} UnboundMethod;
 
-static PyObject *JavaMethod_call(PyObject *pself,
+static PyObject *UnboundMethod_call(PyObject *pself,
         PyObject *args, PyObject *kwargs)
 {
-    JavaMethod *self = (JavaMethod*)pself;
+    UnboundMethod *self = (UnboundMethod*)pself;
     size_t nbargs;
     size_t nonmatchs;
     size_t i;
@@ -138,9 +140,9 @@ static PyObject *JavaMethod_call(PyObject *pself,
     }
 }
 
-static void JavaMethod_dealloc(PyObject *v_self)
+static void UnboundMethod_dealloc(PyObject *v_self)
 {
-    JavaMethod *self = (JavaMethod*)v_self;
+    UnboundMethod *self = (UnboundMethod*)v_self;
 
     if(self->overloads != NULL)
         java_free_methods(self->overloads);
@@ -148,13 +150,13 @@ static void JavaMethod_dealloc(PyObject *v_self)
     self->ob_type->tp_free(self);
 }
 
-static PyTypeObject JavaMethod_type = {
+static PyTypeObject UnboundMethod_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_pyjava.JavaMethod",      /*tp_name*/
-    sizeof(JavaMethod),        /*tp_basicsize*/
+    "_pyjava.UnboundMethod",   /*tp_name*/
+    sizeof(UnboundMethod),     /*tp_basicsize*/
     1,                         /*tp_itemsize*/
-    JavaMethod_dealloc,        /*tp_dealloc*/
+    UnboundMethod_dealloc,     /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
@@ -164,7 +166,7 @@ static PyTypeObject JavaMethod_type = {
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
-    JavaMethod_call,           /*tp_call*/
+    UnboundMethod_call,        /*tp_call*/
     0,                         /*tp_str*/
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
@@ -385,7 +387,7 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
     const char *name;
     size_t namelen;
     java_Methods *methods;
-    JavaMethod *wrapper;
+    UnboundMethod *wrapper;
 
     if(!(PyArg_ParseTuple(args, "s", &name)))
         return NULL;
@@ -402,7 +404,7 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
 
     namelen = strlen(name);
 
-    wrapper = PyObject_NewVar(JavaMethod, &JavaMethod_type, namelen);
+    wrapper = PyObject_NewVar(UnboundMethod, &UnboundMethod_type, namelen);
     wrapper->javaclass = self->javaclass;
     wrapper->overloads = methods;
     strcpy(wrapper->name, name);
@@ -508,7 +510,7 @@ static PyMethodDef JavaClass_methods[] = {
     "Returns the name of this class, for example 'java.lang.String'."
     },
     {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
-    "getmethod(str) -> JavaMethod\n"
+    "getmethod(str) -> UnboundMethod\n"
     "\n"
     "Returns a wrapper for a Java method.\n"
     "The actual method with this name to call is chosen at call time, from\n"
@@ -637,10 +639,10 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaClass_type);
     PyModule_AddObject(mod, "JavaClass", (PyObject*)&JavaClass_type);
 
-    if(PyType_Ready(&JavaMethod_type) < 0)
+    if(PyType_Ready(&UnboundMethod_type) < 0)
         return;
-    Py_INCREF(&JavaMethod_type);
-    PyModule_AddObject(mod, "JavaMethod", (PyObject*)&JavaMethod_type);
+    Py_INCREF(&UnboundMethod_type);
+    PyModule_AddObject(mod, "UnboundMethod", (PyObject*)&UnboundMethod_type);
 }
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
