@@ -83,8 +83,10 @@ typedef struct {
     char name[1];
 } JavaMethod;
 
-static PyObject *JavaMethod_call(JavaMethod *self, PyObject *args)
+static PyObject *JavaMethod_call(PyObject *pself,
+        PyObject *args, PyObject *kwargs)
 {
+    JavaMethod *self = (JavaMethod*)pself;
     size_t nbargs;
     size_t nonmatchs;
     size_t i;
@@ -146,16 +148,6 @@ static void JavaMethod_dealloc(PyObject *v_self)
     self->ob_type->tp_free(self);
 }
 
-static PyMethodDef JavaMethod_methods[] = {
-    {"call", (PyCFunction)JavaMethod_call, METH_VARARGS,
-    "call(*args) -> [object]\n"
-    "\n"
-    "Calls the Java method. Which overload gets called depends on the type\n"
-    "of the parameters."
-    },
-    {NULL}  /* Sentinel */
-};
-
 static PyTypeObject JavaMethod_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -172,7 +164,7 @@ static PyTypeObject JavaMethod_type = {
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
-    0,                         /*tp_call*/
+    JavaMethod_call,           /*tp_call*/
     0,                         /*tp_str*/
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
@@ -185,7 +177,7 @@ static PyTypeObject JavaMethod_type = {
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
-    JavaMethod_methods,        /*tp_methods*/
+    0,                         /*tp_methods*/
     0,                         /*tp_members*/
     0,                         /*tp_getset*/
     0,                         /*tp_base*/
@@ -439,8 +431,10 @@ static PyObject *JavaClass_getfield(JavaClass *self, PyObject *args)
     }
 }
 
-static PyObject *JavaClass_create(JavaClass *self, PyObject *args)
+static PyObject *JavaClass_create(PyObject *pself,
+        PyObject *args, PyObject *kwargs)
 {
+    JavaClass *self = (JavaClass*)pself;
     jobject javaobject;
     size_t nbargs;
     size_t nonmatchs;
@@ -525,14 +519,6 @@ static PyMethodDef JavaClass_methods[] = {
     "\n"
     "Returns a wrapper for a Java field."
     },
-    {"create", (PyCFunction)JavaClass_create, METH_VARARGS,
-    "create(*args) -> JavaInstance\n"
-    "\n"
-    "Builds an object.\n"
-    "This allocates a new object, selecting the correct <init> method from\n"
-    "the type of the parameters, and returns a wrapper for the Java\n"
-    "instance."
-    },
     {NULL}  /* Sentinel */
 };
 
@@ -552,7 +538,7 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
-    0,                         /*tp_call*/
+    JavaClass_create,          /*tp_call*/
     0,                         /*tp_str*/
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
