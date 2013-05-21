@@ -519,7 +519,7 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
         return NULL;
 
     /* Find the methods of that class with that name */
-    methods = java_list_overloads(self->javaclass, name, 0);
+    methods = java_list_methods(self->javaclass, name, LIST_ALL);
     if(methods == NULL)
     {
         PyErr_SetString(
@@ -780,7 +780,7 @@ PyObject *javawrapper_wrap_class(jclass javaclass)
 {
     JavaClass* wrapper = PyObject_New(JavaClass, &JavaClass_type);
     wrapper->javaclass = javaclass;
-    wrapper->constructors = java_list_overloads(javaclass, "<init>", 1);
+    wrapper->constructors = java_list_constructors(javaclass);
 
     return (PyObject*)wrapper;
 }

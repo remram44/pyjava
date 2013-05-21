@@ -40,14 +40,23 @@ typedef struct _java_Methods {
 void java_init(void);
 
 
+#define LIST_STATIC         0x1
+#define LIST_NONSTATIC      0x2
+#define LIST_ALL            (LIST_STATIC | LIST_NONSTATIC)
+
 /**
  * Returns all the Java methods with a given name, or NULL if none is found.
- *
- * @param constructors Indicate to list constructors instead of methods. In
- * that case, is_static is always 1 and the return type is never set.
  */
-java_Methods *java_list_overloads(jclass javaclass, const char *method,
-        int constructors);
+java_Methods *java_list_methods(jclass javaclass, const char *method,
+        int what);
+
+/**
+ * Returns all the Java constructors, or NULL if none is found.
+ *
+ * Constructors are special static methods named "<init>". No return type is
+ * set on the java_Method objects returned.
+ */
+java_Methods *java_list_constructors(jclass javaclass);
 
 void java_free_methods(java_Methods *methods);
 

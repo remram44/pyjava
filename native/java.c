@@ -192,8 +192,8 @@ void java_init(void)
     str_utf8 = (*penv)->NewStringUTF(penv, "UTF-8");
 }
 
-java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
-        int constructors)
+static java_Methods *_java_list_overloads(jclass javaclass,
+        const char *methodname, int constructors, int what)
 {
     jarray method_array;
     size_t nb_methods;
@@ -218,8 +218,8 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
     nb_methods = (*penv)->GetArrayLength(penv, method_array);
 
     /* Create the list of methods. */
-    /* FIXME : we could count the exact number of methods we'll need to store.
-     * This structure is now kept in memory forever... */
+    /* FIXME : we could count the exact number of methods we'll need to store,
+     * instead of using the total array length as an upper bound. */
     methods = malloc(sizeof(java_Methods) +
                      sizeof(java_Method) * (nb_methods - 1));
     methods->nb_methods = 0;
@@ -265,6 +265,10 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
                     class_Modifier, meth_Modifier_isStatic,
                     modifiers) != JNI_FALSE;
         }
+
+        if( (is_static && !(what & LIST_STATIC))
+         || (!is_static && !(what & LIST_NONSTATIC)) )
+            continue;
 
         /* Class[] parameter_types = method.getParameterTypes() */
         if(!constructors)
@@ -326,6 +330,17 @@ java_Methods *java_list_overloads(jclass javaclass, const char *methodname,
     }
 
     return methods;
+}
+
+java_Methods *java_list_methods(jclass javaclass,
+        const char *methodname, int what)
+{
+    return _java_list_overloads(javaclass, methodname, 0, what);
+}
+
+java_Methods *java_list_constructors(jclass javaclass)
+{
+    return _java_list_overloads(javaclass, "<init>", 1, LIST_STATIC);
 }
 
 void java_free_methods(java_Methods *methods)
