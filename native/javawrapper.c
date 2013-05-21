@@ -126,8 +126,6 @@ static PyObject *UnboundMethod_call(PyObject *pself,
                     matching_method->returntype);
         else
         {
-            /* TODO : check that first parameter has type self->javaclass, or
-             * raise TypeError */
             ret = convert_calljava(
                     java_parameters[0].l, matching_method->id,
                     java_parameters+1,
@@ -173,6 +171,134 @@ static PyTypeObject UnboundMethod_type = {
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
     "Java unbound method",     /*tp_doc*/
+    0,                         /*tp_traverse*/
+    0,                         /*tp_clear*/
+    0,                         /*tp_richcompare*/
+    0,                         /*tp_weaklistoffset*/
+    0,                         /*tp_iter*/
+    0,                         /*tp_iternext*/
+    0,                         /*tp_methods*/
+    0,                         /*tp_members*/
+    0,                         /*tp_getset*/
+    0,                         /*tp_base*/
+    0,                         /*tp_dict*/
+    0,                         /*tp_descr_get*/
+    0,                         /*tp_descr_set*/
+    0,                         /*tp_dictoffset*/
+    0,                         /*tp_init*/
+    0,                         /*tp_alloc*/
+    PyType_GenericNew,         /*tp_new*/
+};
+
+
+/*==============================================================================
+ * BoundMethod type.
+ *
+ * This represents a bound method, i.e. a method obtained from an instance.
+ * It is associated with the instance it was retrieved from. When called, it
+ * will be matched only with the nonstatic methods of that class, and will use
+ * the instance it is bound to as the self argument. It contains the jclass,
+ * the jobject, and the name of the method.
+ * There is no jmethodID here because this object wraps all the Java methods
+ * with the same name, and the actual decision will occur when the call is
+ * made (and the parameter types are known).
+ */
+
+typedef struct {
+    PyObject_HEAD
+    jclass javaclass;
+    jobject javainstance;
+    java_Methods *overloads;
+    char name[1];
+} BoundMethod;
+
+static PyObject *BoundMethod_call(PyObject *pself,
+        PyObject *args, PyObject *kwargs)
+{
+    BoundMethod *self = (BoundMethod*)pself;
+    size_t nbargs;
+    size_t nonmatchs;
+    size_t i;
+
+    java_Method *matching_method;
+
+    /* args = (self,) + args */
+    {
+        PyObject *first_arg = Py_BuildValue("(O)", self->javainstance);
+        args = PySequence_Concat(first_arg, args);
+        /* the original 'args' object is deleted by Python anyway */
+        Py_DECREF(first_arg);
+    }
+    matching_method = find_matching_overload(self->overloads,
+            args, &nonmatchs);
+
+    nbargs = PyTuple_Size(args);
+
+    if(matching_method == NULL)
+    {
+        PyErr_Format(
+                Err_NoMatchingOverload,
+                "%zu methods \"%s\" with %zd parameters (no match)",
+                nonmatchs, self->name, nbargs);
+        return NULL;
+    }
+
+    {
+        jvalue *java_parameters;
+        PyObject *ret;
+        java_parameters = malloc(sizeof(jvalue) * nbargs);
+        for(i = 0; i < nbargs; ++i)
+            convert_py2jav(
+                    PyTuple_GET_ITEM(args, i),
+                    matching_method->args[i],
+                    &java_parameters[i]);
+
+        assert(!matching_method->is_static);
+
+        ret = convert_calljava(
+                java_parameters[0].l, matching_method->id,
+                java_parameters+1,
+                matching_method->returntype);
+
+        free(java_parameters);
+
+        return ret;
+    }
+}
+
+static void BoundMethod_dealloc(PyObject *v_self)
+{
+    BoundMethod *self = (BoundMethod*)v_self;
+
+    if(self->overloads != NULL)
+        java_free_methods(self->overloads);
+
+    self->ob_type->tp_free(self);
+}
+
+static PyTypeObject BoundMethod_type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "pyjava.BoundMethod",      /*tp_name*/
+    sizeof(BoundMethod),       /*tp_basicsize*/
+    1,                         /*tp_itemsize*/
+    BoundMethod_dealloc,       /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    BoundMethod_call,          /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    "Java bound method",       /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
     0,                         /*tp_richcompare*/
@@ -643,6 +769,11 @@ void javawrapper_init(PyObject *mod)
         return;
     Py_INCREF(&UnboundMethod_type);
     PyModule_AddObject(mod, "UnboundMethod", (PyObject*)&UnboundMethod_type);
+
+    if(PyType_Ready(&BoundMethod_type) < 0)
+        return;
+    Py_INCREF(&BoundMethod_type);
+    PyModule_AddObject(mod, "BoundMethod", (PyObject*)&BoundMethod_type);
 }
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
