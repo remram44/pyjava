@@ -153,7 +153,7 @@ static void UnboundMethod_dealloc(PyObject *v_self)
 static PyTypeObject UnboundMethod_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_pyjava.UnboundMethod",   /*tp_name*/
+    "pyjava.UnboundMethod",    /*tp_name*/
     sizeof(UnboundMethod),     /*tp_basicsize*/
     1,                         /*tp_itemsize*/
     UnboundMethod_dealloc,     /*tp_dealloc*/
@@ -172,7 +172,7 @@ static PyTypeObject UnboundMethod_type = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Java method wrapper",     /*tp_doc*/
+    "Java unbound method",     /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
     0,                         /*tp_richcompare*/
@@ -224,7 +224,7 @@ static PyMethodDef JavaInstance_methods[] = {
 static PyTypeObject JavaInstance_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_pyjava.JavaInstance",    /*tp_name*/
+    "pyjava.JavaInstance",     /*tp_name*/
     sizeof(JavaInstance),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -314,7 +314,7 @@ static PyMethodDef JavaField_methods[] = {
 static PyTypeObject JavaField_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_pyjava.JavaField",       /*tp_name*/
+    "pyjava.JavaField",        /*tp_name*/
     sizeof(JavaField),         /*tp_basicsize*/
     1,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -357,8 +357,8 @@ static PyTypeObject JavaField_type = {
 /*==============================================================================
  * JavaClass type.
  *
- * This is the wrapper returned by _pyjava.getclass(). It contains the jclass
- * and a getmethod() method that returns a wrapper for a specific method.
+ * This is the wrapper returned by getclass(). It contains the jclass and a
+ * getmethod() method that returns a wrapper for a specific method.
  */
 
 typedef struct {
@@ -527,7 +527,7 @@ static PyMethodDef JavaClass_methods[] = {
 static PyTypeObject JavaClass_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_pyjava.JavaClass",       /*tp_name*/
+    "pyjava.JavaClass",        /*tp_name*/
     sizeof(JavaClass),         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     JavaClass_dealloc,         /*tp_dealloc*/
