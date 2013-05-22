@@ -120,10 +120,10 @@ typedef struct _S_UnboundMethod {
     char name[1];
 } UnboundMethod;
 
-static PyObject *UnboundMethod_call(PyObject *pself,
+static PyObject *UnboundMethod_call(PyObject *v_self,
         PyObject *args, PyObject *kwargs)
 {
-    UnboundMethod *self = (UnboundMethod*)pself;
+    UnboundMethod *self = (UnboundMethod*)v_self;
     size_t nonmatchs;
     java_Method *matching_method = find_matching_overload(self->overloads,
             args, &nonmatchs);
@@ -205,10 +205,10 @@ typedef struct _S_BoundMethod {
     char name[1];
 } BoundMethod;
 
-static PyObject *BoundMethod_call(PyObject *pself,
+static PyObject *BoundMethod_call(PyObject *v_self,
         PyObject *args, PyObject *kwargs)
 {
-    BoundMethod *self = (BoundMethod*)pself;
+    BoundMethod *self = (BoundMethod*)v_self;
     size_t nonmatchs;
 
     java_Method *matching_method;
@@ -394,10 +394,10 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
     return (PyObject*)wrapper;
 }
 
-static PyObject *JavaClass_create(PyObject *pself,
+static PyObject *JavaClass_create(PyObject *v_self,
         PyObject *args, PyObject *kwargs)
 {
-    JavaClass *self = (JavaClass*)pself;
+    JavaClass *self = (JavaClass*)v_self;
     jobject javaobject;
     size_t nbargs;
     size_t nonmatchs;
