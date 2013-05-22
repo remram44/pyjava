@@ -484,27 +484,6 @@ static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
     return (PyObject*)wrapper;
 }
 
-static PyObject *JavaClass_getfield(JavaClass *self, PyObject *args)
-{
-    const char *name;
-    JavaField *wrapper;
-
-    if(!PyArg_ParseTuple(args, "s", &name))
-        return NULL;
-
-    wrapper = PyObject_New(JavaField, &JavaField_type);
-    wrapper->javaclass = self->javaclass;
-    if(convert_getfielddescriptor(&wrapper->field, self->javaclass, name) == 1)
-        return (PyObject*)wrapper;
-    else
-    {
-        PyErr_SetString(
-                PyExc_AttributeError,
-                name);
-        return NULL;
-    }
-}
-
 static PyObject *JavaClass_create(PyObject *pself,
         PyObject *args, PyObject *kwargs)
 {
@@ -582,11 +561,6 @@ static PyMethodDef JavaClass_methods[] = {
     "Returns a wrapper for a Java method.\n"
     "The actual method with this name to call is chosen at call time, from\n"
     "the type of the parameters."
-    },
-    {"getfield", (PyCFunction)JavaClass_getfield, METH_VARARGS,
-    "getfield(str) -> JavaField\n"
-    "\n"
-    "Returns a wrapper for a Java field."
     },
     {NULL}  /* Sentinel */
 };
