@@ -174,7 +174,7 @@ class Test_accessfield(unittest.TestCase):
     def test_testclass(self):
         cl = _pyjava.getclass(
                 'pyjavatest/test_fields/AccessField')
-        obj = cl.create()
+        obj = cl()
 
         self.assertEqual(cl.a, 7)
         self.assertEqual(cl.b, 'test')
