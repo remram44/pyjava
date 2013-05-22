@@ -351,96 +351,6 @@ static PyTypeObject JavaInstance_type = {
 
 
 /*==============================================================================
- * JavaField type.
- *
- * This is the wrapper returned by JavaClass.getfield(). It contains the
- * jclass and the jfieldID of the field.
- */
-
-typedef struct _S_JavaField {
-    PyObject_HEAD
-    jclass javaclass;
-    JavaFieldDescr field;
-} JavaField;
-
-static PyObject *JavaField_get(JavaField *self, PyObject *args)
-{
-    JavaInstance *obj;
-    if(self->field.is_static)
-    {
-        if(!PyArg_ParseTuple(args, ""))
-            return NULL;
-        return convert_getstaticjavafield(self->javaclass, &self->field);
-    }
-    else
-    {
-        if(!PyArg_ParseTuple(args, "O!", &JavaInstance_type, &obj))
-            return NULL;
-        if(java_equals(java_getclass(obj->javaobject), self->javaclass))
-            return convert_getjavafield(obj->javaobject, &self->field);
-        else
-        {
-            PyErr_SetString(
-                    Err_Base,
-                    "field getter used on object of different type");
-            return NULL;
-        }
-    }
-}
-
-static PyMethodDef JavaField_methods[] = {
-    {"get", (PyCFunction)JavaField_get, METH_VARARGS,
-    "get([object]) -> [object]\n"
-    "\n"
-    "Gets this class field on this object."
-    },
-    {NULL}  /* Sentinel */
-};
-
-static PyTypeObject JavaField_type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
-    "pyjava.JavaField",        /*tp_name*/
-    sizeof(JavaField),         /*tp_basicsize*/
-    1,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
-    0,                         /*tp_print*/
-    0,                         /*tp_getattr*/
-    0,                         /*tp_setattr*/
-    0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
-    0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
-    0,                         /*tp_call*/
-    0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
-    0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Java field wrapper",      /*tp_doc*/
-    0,                         /*tp_traverse*/
-    0,                         /*tp_clear*/
-    0,                         /*tp_richcompare*/
-    0,                         /*tp_weaklistoffset*/
-    0,                         /*tp_iter*/
-    0,                         /*tp_iternext*/
-    JavaField_methods,         /*tp_methods*/
-    0,                         /*tp_members*/
-    0,                         /*tp_getset*/
-    0,                         /*tp_base*/
-    0,                         /*tp_dict*/
-    0,                         /*tp_descr_get*/
-    0,                         /*tp_descr_set*/
-    0,                         /*tp_dictoffset*/
-    0,                         /*tp_init*/
-    0,                         /*tp_alloc*/
-    PyType_GenericNew,         /*tp_new*/
-};
-
-
-/*==============================================================================
  * JavaClass type.
  *
  * This is the wrapper returned by getclass(). It contains the jclass and a
@@ -668,11 +578,6 @@ void javawrapper_init(PyObject *mod)
         return;
     Py_INCREF(&JavaInstance_type);
     PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
-
-    if(PyType_Ready(&JavaField_type) < 0)
-        return;
-    Py_INCREF(&JavaField_type);
-    PyModule_AddObject(mod, "JavaField", (PyObject*)&JavaField_type);
 
     JavaClass_type.tp_base = &JavaInstance_type;
     if(PyType_Ready(&JavaClass_type) < 0)
