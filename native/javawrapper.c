@@ -362,8 +362,9 @@ static PyTypeObject JavaInstance_type = {
 /*==============================================================================
  * JavaClass type.
  *
- * This is the wrapper returned by getclass(). It contains the jclass and a
- * getmethod() method that returns a wrapper for a specific method.
+ * This is the wrapper returned by getclass().
+ * It can be called to make a new instance of that Java type, or accessed for
+ * either static fields or unbound methods (static or not).
  */
 
 typedef struct _S_JavaClass {
@@ -372,36 +373,6 @@ typedef struct _S_JavaClass {
     /* the struct until here is the same as JavaInstance, as we inherit! */
     java_Methods *constructors;
 } JavaClass;
-
-static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
-{
-    const char *name;
-    size_t namelen;
-    java_Methods *methods;
-    UnboundMethod *wrapper;
-
-    if(!(PyArg_ParseTuple(args, "s", &name)))
-        return NULL;
-
-    /* Find the methods of that class with that name */
-    methods = java_list_methods(self->javaclass, name, LIST_ALL);
-    if(methods == NULL)
-    {
-        PyErr_SetString(
-                PyExc_AttributeError,
-                name);
-        return NULL;
-    }
-
-    namelen = strlen(name);
-
-    wrapper = PyObject_NewVar(UnboundMethod, &UnboundMethod_type, namelen);
-    wrapper->javaclass = self->javaclass;
-    wrapper->overloads = methods;
-    strcpy(wrapper->name, name);
-
-    return (PyObject*)wrapper;
-}
 
 static PyObject *JavaClass_create(PyObject *v_self,
         PyObject *args, PyObject *kwargs)
@@ -463,6 +434,41 @@ static PyObject *JavaClass_create(PyObject *v_self,
     }
 }
 
+static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
+{
+    JavaClass *self = (JavaClass*)v_self;
+    const char *name = PyString_AsString(attr_name); /* UTF-8 */
+    Py_ssize_t namelen = PyString_GET_SIZE(attr_name);
+
+    /* First, try to find a method with that name, in that class.
+     * If at least one such method exists, we return an UnboundMethod. */
+    java_Methods *methods = java_list_methods(self->javaclass, name, LIST_ALL);
+    if(methods != NULL)
+    {
+        UnboundMethod *wrapper = PyObject_NewVar(UnboundMethod,
+                &UnboundMethod_type, namelen);
+        wrapper->javaclass = self->javaclass;
+        wrapper->overloads = methods;
+        memcpy(wrapper->name, name, namelen);
+        wrapper->name[namelen] = '\0';
+
+        return (PyObject*)wrapper;
+    }
+
+    /* Then, try a static field */
+    /* TODO */
+
+    /* Finally, act on the Class object (reflection) */
+    /* TODO */
+
+    /* We didn't find anything, raise AttributeError */
+    PyErr_Format(
+            PyExc_AttributeError,
+            "Java class has no attribute %s",
+            name);
+    return NULL;
+}
+
 static void JavaClass_dealloc(PyObject *v_self)
 {
     JavaClass *self = (JavaClass*)v_self;
@@ -472,17 +478,6 @@ static void JavaClass_dealloc(PyObject *v_self)
 
     self->ob_type->tp_free(self);
 }
-
-static PyMethodDef JavaClass_methods[] = {
-    {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
-    "getmethod(str) -> UnboundMethod\n"
-    "\n"
-    "Returns a wrapper for a Java method.\n"
-    "The actual method with this name to call is chosen at call time, from\n"
-    "the type of the parameters."
-    },
-    {NULL}  /* Sentinel */
-};
 
 static PyTypeObject JavaClass_type = {
     PyObject_HEAD_INIT(NULL)
@@ -502,7 +497,7 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_hash */
     JavaClass_create,          /*tp_call*/
     0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
+    JavaClass_getattr,         /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT |
@@ -514,7 +509,7 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
-    JavaClass_methods,         /*tp_methods*/
+    0,                         /*tp_methods*/
     0,                         /*tp_members*/
     0,                         /*tp_getset*/
     0,                         /*tp_base*/
