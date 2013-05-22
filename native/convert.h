@@ -53,7 +53,7 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         jvalue *params, jclass returntype);
 
 
-typedef struct {
+typedef struct _S_JavaFieldDescr {
     jfieldID id;
     char is_static;
     int type; /* this is really a enum CVT_JType */

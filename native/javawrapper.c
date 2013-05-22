@@ -113,7 +113,7 @@ PyObject *_method_call(java_Method *method, int bound,
  * made (and the parameter types are known).
  */
 
-typedef struct {
+typedef struct _S_UnboundMethod {
     PyObject_HEAD
     jclass javaclass;
     java_Methods *overloads;
@@ -197,7 +197,7 @@ static PyTypeObject UnboundMethod_type = {
  * made (and the parameter types are known).
  */
 
-typedef struct {
+typedef struct _S_BoundMethod {
     PyObject_HEAD
     jclass javaclass;
     jobject javainstance;
@@ -285,7 +285,7 @@ static PyTypeObject BoundMethod_type = {
  * This is the wrapper for Java instance objects; it contains a jobject.
  */
 
-typedef struct {
+typedef struct _S_JavaInstance {
     PyObject_HEAD
     jobject javaobject;
 } JavaInstance;
@@ -357,7 +357,7 @@ static PyTypeObject JavaInstance_type = {
  * jclass and the jfieldID of the field.
  */
 
-typedef struct {
+typedef struct _S_JavaField {
     PyObject_HEAD
     jclass javaclass;
     JavaFieldDescr field;
@@ -447,7 +447,7 @@ static PyTypeObject JavaField_type = {
  * getmethod() method that returns a wrapper for a specific method.
  */
 
-typedef struct {
+typedef struct _S_JavaClass {
     PyObject_HEAD
     jobject javaclass;
     /* the struct until here is the same as JavaInstance, as we inherit! */
