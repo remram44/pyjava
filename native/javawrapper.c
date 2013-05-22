@@ -454,20 +454,6 @@ typedef struct _S_JavaClass {
     java_Methods *constructors;
 } JavaClass;
 
-static PyObject *JavaClass_getclassname(JavaClass *self, PyObject *args)
-{
-    if(!PyArg_ParseTuple(args, ""))
-        return NULL;
-
-    {
-        size_t size;
-        const char *classname = java_getclassname(self->javaclass, &size);
-        return PyUnicode_FromStringAndSize(
-                classname,
-                size);
-    }
-}
-
 static PyObject *JavaClass_getmethod(JavaClass *self, PyObject *args)
 {
     const char *name;
@@ -590,11 +576,6 @@ static void JavaClass_dealloc(PyObject *v_self)
 }
 
 static PyMethodDef JavaClass_methods[] = {
-    {"getclassname", (PyCFunction)JavaClass_getclassname, METH_VARARGS,
-    "getclassname() -> str\n"
-    "\n"
-    "Returns the name of this class, for example 'java.lang.String'."
-    },
     {"getmethod", (PyCFunction)JavaClass_getmethod, METH_VARARGS,
     "getmethod(str) -> UnboundMethod\n"
     "\n"
