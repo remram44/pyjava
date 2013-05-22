@@ -66,6 +66,41 @@ static java_Method *find_matching_overload(java_Methods *overloads,
 }
 
 
+PyObject *_method_call(java_Method *method, int bound,
+        jclass javaclass, PyObject *args)
+{
+    size_t nbargs = PyTuple_Size(args);
+    PyObject *ret;
+    jvalue *java_parameters = malloc(sizeof(jvalue) * nbargs);
+    size_t i;
+    for(i = 0; i < nbargs; ++i)
+        convert_py2jav(
+                PyTuple_GET_ITEM(args, i),
+                method->args[i],
+                &java_parameters[i]);
+
+    if(method->is_static)
+    {
+        assert(!bound);
+        ret = convert_calljava_static(
+                javaclass, method->id,
+                java_parameters,
+                method->returntype);
+    }
+    else
+    {
+        ret = convert_calljava(
+                java_parameters[0].l, method->id,
+                java_parameters+1,
+                method->returntype);
+    }
+
+    free(java_parameters);
+
+    return ret;
+}
+
+
 /*==============================================================================
  * UnboundMethod type.
  *
@@ -89,53 +124,11 @@ static PyObject *UnboundMethod_call(PyObject *pself,
         PyObject *args, PyObject *kwargs)
 {
     UnboundMethod *self = (UnboundMethod*)pself;
-    size_t nbargs;
     size_t nonmatchs;
-    size_t i;
-
-    java_Method *matching_method;
-
-    matching_method = find_matching_overload(self->overloads,
+    java_Method *matching_method = find_matching_overload(self->overloads,
             args, &nonmatchs);
 
-    nbargs = PyTuple_Size(args);
-
-    if(matching_method == NULL)
-    {
-        PyErr_Format(
-                Err_NoMatchingOverload,
-                "%zu methods \"%s\" with %zd parameters (no match)",
-                nonmatchs, self->name, nbargs);
-        return NULL;
-    }
-
-    {
-        jvalue *java_parameters;
-        PyObject *ret;
-        java_parameters = malloc(sizeof(jvalue) * nbargs);
-        for(i = 0; i < nbargs; ++i)
-            convert_py2jav(
-                    PyTuple_GET_ITEM(args, i),
-                    matching_method->args[i],
-                    &java_parameters[i]);
-
-        if(matching_method->is_static)
-            ret = convert_calljava_static(
-                    self->javaclass, matching_method->id,
-                    java_parameters,
-                    matching_method->returntype);
-        else
-        {
-            ret = convert_calljava(
-                    java_parameters[0].l, matching_method->id,
-                    java_parameters+1,
-                    matching_method->returntype);
-        }
-
-        free(java_parameters);
-
-        return ret;
-    }
+    return _method_call(matching_method, 0, self->javaclass, args);
 }
 
 static void UnboundMethod_dealloc(PyObject *v_self)
@@ -216,9 +209,7 @@ static PyObject *BoundMethod_call(PyObject *pself,
         PyObject *args, PyObject *kwargs)
 {
     BoundMethod *self = (BoundMethod*)pself;
-    size_t nbargs;
     size_t nonmatchs;
-    size_t i;
 
     java_Method *matching_method;
 
@@ -229,41 +220,10 @@ static PyObject *BoundMethod_call(PyObject *pself,
         /* the original 'args' object is deleted by Python anyway */
         Py_DECREF(first_arg);
     }
+
     matching_method = find_matching_overload(self->overloads,
             args, &nonmatchs);
-
-    nbargs = PyTuple_Size(args);
-
-    if(matching_method == NULL)
-    {
-        PyErr_Format(
-                Err_NoMatchingOverload,
-                "%zu methods \"%s\" with %zd parameters (no match)",
-                nonmatchs, self->name, nbargs);
-        return NULL;
-    }
-
-    {
-        jvalue *java_parameters;
-        PyObject *ret;
-        java_parameters = malloc(sizeof(jvalue) * nbargs);
-        for(i = 0; i < nbargs; ++i)
-            convert_py2jav(
-                    PyTuple_GET_ITEM(args, i),
-                    matching_method->args[i],
-                    &java_parameters[i]);
-
-        assert(!matching_method->is_static);
-
-        ret = convert_calljava(
-                java_parameters[0].l, matching_method->id,
-                java_parameters+1,
-                matching_method->returntype);
-
-        free(java_parameters);
-
-        return ret;
-    }
+    return _method_call(matching_method, 1, self->javaclass, args);
 }
 
 static void BoundMethod_dealloc(PyObject *v_self)
