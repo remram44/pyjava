@@ -454,61 +454,17 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
     }
 }
 
-int convert_getfielddescriptor(JavaFieldDescr *field,
-        jclass javaclass, const char *name)
+static PyObject *convert_getjavainstfield(jobject object, jfieldID id,
+        enum CVT_JType type)
 {
-    jobject javafield;
-    jclass javatype;
-    jint modifiers;
-    char is_static;
-    jstring javaname = java_from_utf8(name, strlen(name));
-
-    javafield = (*penv)->CallObjectMethod(
-            penv,
-            javaclass,
-            meth_Class_getField,
-            javaname);
-    if(javafield == NULL)
-    {
-        (*penv)->ExceptionClear(penv);
-        return 0;
-    }
-
-    modifiers = (*penv)->CallIntMethod(
-            penv,
-            javafield, meth_Field_getModifiers);
-    is_static = (*penv)->CallStaticBooleanMethod(
-            penv,
-            class_Modifier, meth_Modifier_isStatic,
-            modifiers) != JNI_FALSE;
-
-    javatype = (*penv)->CallObjectMethod(
-            penv,
-            javafield,
-            meth_Field_getType);
-
-    java_clear_ref(javaname);
-
-    field->id = (*penv)->FromReflectedField(penv, javafield);
-    field->type = (int)convert_id_type(javatype);
-    field->is_static = is_static;
-
-    java_clear_ref(javafield);
-    java_clear_ref(javatype);
-
-    return 1;
-}
-
-PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
-{
-    switch((enum CVT_JType)field->type)
+    switch(type)
     {
     case CVT_J_BOOLEAN:
         {
             jboolean ret = (*penv)->GetBooleanField(
                     penv,
                     object,
-                    field->id);
+                    id);
             if(ret == JNI_FALSE)
             {
                 Py_INCREF(Py_False);
@@ -525,7 +481,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jbyte ret = (*penv)->GetByteField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_CHAR:
@@ -533,7 +489,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jchar ret = (*penv)->GetCharField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyUnicode_FromFormat("%c", (int)ret);
         }
     case CVT_J_SHORT:
@@ -541,7 +497,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jshort ret = (*penv)->GetShortField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_INT:
@@ -549,7 +505,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jint ret = (*penv)->GetIntField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_LONG:
@@ -557,7 +513,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jlong ret = (*penv)->GetLongField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyLong_FromLongLong(ret);
         }
     case CVT_J_FLOAT:
@@ -565,7 +521,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jfloat ret = (*penv)->GetFloatField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyFloat_FromDouble(ret);
         }
     case CVT_J_DOUBLE:
@@ -573,7 +529,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jdouble ret = (*penv)->GetDoubleField(
                     penv,
                     object,
-                    field->id);
+                    id);
             return PyFloat_FromDouble(ret);
         }
     case CVT_J_OBJECT:
@@ -581,7 +537,7 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
             jobject ret = (*penv)->GetObjectField(
                     penv,
                     object,
-                    field->id);
+                    id);
             if(ret == NULL)
             {
                 Py_INCREF(Py_None);
@@ -609,17 +565,17 @@ PyObject *convert_getjavafield(jobject object, const JavaFieldDescr *field)
     }
 }
 
-PyObject *convert_getstaticjavafield(jclass javaclass,
-        const JavaFieldDescr *field)
+static PyObject *convert_getjavastaticfield(jclass javaclass, jfieldID id,
+        enum CVT_JType type)
 {
-    switch((enum CVT_JType)field->type)
+    switch(type)
     {
     case CVT_J_BOOLEAN:
         {
             jboolean ret = (*penv)->GetStaticBooleanField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             if(ret == JNI_FALSE)
             {
                 Py_INCREF(Py_False);
@@ -636,7 +592,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jbyte ret = (*penv)->GetStaticByteField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_CHAR:
@@ -644,7 +600,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jchar ret = (*penv)->GetStaticCharField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyUnicode_FromFormat("%c", (int)ret);
         }
     case CVT_J_SHORT:
@@ -652,7 +608,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jshort ret = (*penv)->GetStaticShortField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_INT:
@@ -660,7 +616,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jint ret = (*penv)->GetStaticIntField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyInt_FromLong(ret);
         }
     case CVT_J_LONG:
@@ -668,7 +624,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jlong ret = (*penv)->GetStaticLongField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyLong_FromLongLong(ret);
         }
     case CVT_J_FLOAT:
@@ -676,7 +632,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jfloat ret = (*penv)->GetStaticFloatField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyFloat_FromDouble(ret);
         }
     case CVT_J_DOUBLE:
@@ -684,7 +640,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jdouble ret = (*penv)->GetStaticDoubleField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             return PyFloat_FromDouble(ret);
         }
     case CVT_J_OBJECT:
@@ -692,7 +648,7 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
             jobject ret = (*penv)->GetStaticObjectField(
                     penv,
                     javaclass,
-                    field->id);
+                    id);
             if(ret == NULL)
             {
                 Py_INCREF(Py_None);
@@ -717,5 +673,64 @@ PyObject *convert_getstaticjavafield(jclass javaclass,
     default:
         assert(0); /* can't happen */
         return NULL;
+    }
+}
+
+PyObject *convert_getjavafield(jclass javaclass, jobject object,
+        const char *name, int type)
+{
+    jobject javafield;
+    jclass javatype;
+    jint modifiers;
+    char is_static;
+    jstring javaname = java_from_utf8(name, strlen(name));
+
+    javafield = (*penv)->CallObjectMethod(
+            penv,
+            javaclass,
+            meth_Class_getField,
+            javaname);
+    java_clear_ref(javaname);
+
+    /* object can't be if the nonstatic fields are requested */
+    assert(object != NULL || !(type & FIELD_NONSTATIC));
+
+    if(javafield == NULL)
+    {
+        (*penv)->ExceptionClear(penv);
+        return NULL; /* no field with that name */
+    }
+
+    modifiers = (*penv)->CallIntMethod(
+            penv,
+            javafield, meth_Field_getModifiers);
+    is_static = (*penv)->CallStaticBooleanMethod(
+            penv,
+            class_Modifier, meth_Modifier_isStatic,
+            modifiers) != JNI_FALSE;
+
+    if( (is_static && !(type & FIELD_STATIC))
+     || (!is_static && !(type & FIELD_NONSTATIC)) )
+        return NULL; /* field doesn't have the required type */
+
+    javatype = (*penv)->CallObjectMethod(
+            penv,
+            javafield,
+            meth_Field_getType);
+
+    {
+        jfieldID id = (*penv)->FromReflectedField(penv, javafield);
+        enum CVT_JType type = convert_id_type(javatype);
+        PyObject *pyobj;
+
+        if(!is_static)
+            pyobj = convert_getjavainstfield(object, id, type);
+        else
+            pyobj = convert_getjavastaticfield(javaclass, id, type);
+
+        java_clear_ref(javafield);
+        java_clear_ref(javatype);
+
+        return pyobj;
     }
 }

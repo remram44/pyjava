@@ -442,21 +442,29 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
 
     /* First, try to find a method with that name, in that class.
      * If at least one such method exists, we return an UnboundMethod. */
-    java_Methods *methods = java_list_methods(self->javaclass, name, LIST_ALL);
-    if(methods != NULL)
     {
-        UnboundMethod *wrapper = PyObject_NewVar(UnboundMethod,
-                &UnboundMethod_type, namelen);
-        wrapper->javaclass = self->javaclass;
-        wrapper->overloads = methods;
-        memcpy(wrapper->name, name, namelen);
-        wrapper->name[namelen] = '\0';
+        java_Methods *methods = java_list_methods(self->javaclass, name,
+                                                  LIST_ALL);
+        if(methods != NULL)
+        {
+            UnboundMethod *wrapper = PyObject_NewVar(UnboundMethod,
+                    &UnboundMethod_type, namelen);
+            wrapper->javaclass = self->javaclass;
+            wrapper->overloads = methods;
+            memcpy(wrapper->name, name, namelen);
+            wrapper->name[namelen] = '\0';
 
-        return (PyObject*)wrapper;
+            return (PyObject*)wrapper;
+        }
     }
 
-    /* Then, try a static field */
-    /* TODO */
+    /* Then, try a field (static) */
+    {
+        PyObject *field = convert_getjavafield(self->javaclass, NULL, name,
+                                                FIELD_STATIC);
+        if(field != NULL)
+            return field;
+    }
 
     /* Finally, act on the Class object (reflection) */
     /* TODO */
