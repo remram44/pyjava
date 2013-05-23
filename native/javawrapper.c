@@ -152,7 +152,7 @@ static void UnboundMethod_dealloc(PyObject *v_self)
     if(self->overloads != NULL)
         java_free_methods(self->overloads);
     if(self->javaclass != NULL)
-        java_clear_ref(self->javaclass);
+        (*penv)->DeleteGlobalRef(penv, self->javaclass);
 
     self->ob_type->tp_free(self);
 }
@@ -246,9 +246,9 @@ static void BoundMethod_dealloc(PyObject *v_self)
     if(self->overloads != NULL)
         java_free_methods(self->overloads);
     if(self->javaclass != NULL)
-        java_clear_ref(self->javaclass);
+        (*penv)->DeleteGlobalRef(penv, self->javaclass);
     if(self->javainstance != NULL)
-        java_clear_ref(self->javainstance);
+        (*penv)->DeleteGlobalRef(penv, self->javainstance);
 
     self->ob_type->tp_free(self);
 }
@@ -323,8 +323,9 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
         {
             BoundMethod *wrapper = PyObject_NewVar(BoundMethod,
                     &BoundMethod_type, namelen);
-            wrapper->javaclass = javaclass;
-            wrapper->javainstance = self->javaobject;
+            wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
+            wrapper->javainstance = (*penv)->NewGlobalRef(penv,
+                                                          self->javaobject);
             wrapper->overloads = methods;
             memcpy(wrapper->name, name, namelen);
             wrapper->name[namelen] = '\0';
@@ -339,7 +340,7 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
                                                name, FIELD_BOTH);
         if(field != NULL)
         {
-            java_clear_ref(javaclass);
+            (*penv)->DeleteLocalRef(penv, javaclass);
             return field;
         }
     }
@@ -349,8 +350,18 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
             PyExc_AttributeError,
             "Java instance has no attribute %s",
             name);
-    java_clear_ref(javaclass);
+    (*penv)->DeleteLocalRef(penv, javaclass);
     return NULL;
+}
+
+static void JavaInstance_dealloc(PyObject *v_self)
+{
+    JavaInstance *self = (JavaInstance*)v_self;
+
+    if(self->javaobject != NULL)
+        (*penv)->DeleteGlobalRef(penv, self->javaobject);
+
+    self->ob_type->tp_free(self);
 }
 
 static PyTypeObject JavaInstance_type = {
@@ -359,7 +370,7 @@ static PyTypeObject JavaInstance_type = {
     "pyjava.JavaInstance",     /*tp_name*/
     sizeof(JavaInstance),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
+    JavaInstance_dealloc,      /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
@@ -465,7 +476,7 @@ static PyObject *JavaClass_create(PyObject *v_self,
         JavaInstance *inst;
 
         inst = PyObject_New(JavaInstance, &JavaInstance_type);
-        inst->javaobject = javaobject;
+        inst->javaobject = (*penv)->NewGlobalRef(penv, javaobject);
 
         return (PyObject*)inst;
     }
@@ -486,7 +497,7 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
         {
             UnboundMethod *wrapper = PyObject_NewVar(UnboundMethod,
                     &UnboundMethod_type, namelen);
-            wrapper->javaclass = self->javaclass;
+            wrapper->javaclass = (*penv)->NewGlobalRef(penv, self->javaclass);
             wrapper->overloads = methods;
             memcpy(wrapper->name, name, namelen);
             wrapper->name[namelen] = '\0';
@@ -520,6 +531,8 @@ static void JavaClass_dealloc(PyObject *v_self)
 
     if(self->constructors != NULL)
         java_free_methods(self->constructors);
+    if(self->javaclass != NULL)
+        (*penv)->DeleteGlobalRef(penv, self->javaclass);
 
     self->ob_type->tp_free(self);
 }
@@ -602,8 +615,8 @@ void javawrapper_init(PyObject *mod)
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
 {
-    JavaClass* wrapper = PyObject_New(JavaClass, &JavaClass_type);
-    wrapper->javaclass = javaclass;
+    JavaClass *wrapper = PyObject_New(JavaClass, &JavaClass_type);
+    wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
     wrapper->constructors = java_list_constructors(javaclass);
 
     return (PyObject*)wrapper;
@@ -632,7 +645,7 @@ PyObject *javawrapper_wrap_instance(jobject javaobject)
     else
     {
         JavaInstance *inst = PyObject_New(JavaInstance, &JavaInstance_type);
-        inst->javaobject = javaobject;
+        inst->javaobject = (*penv)->NewGlobalRef(penv, javaobject);
         return (PyObject*)inst;
     }
 }

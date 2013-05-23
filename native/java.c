@@ -374,24 +374,8 @@ const char *java_getclassname(jclass javaclass, size_t *size)
             javaclass,
             meth_Class_getName);
     utf8 = java_to_utf8(classname, size);
-    java_clear_ref(classname);
+    (*penv)->DeleteLocalRef(penv, classname);
     return utf8;
-}
-
-void java_clear_ref(jobject ref)
-{
-    switch((*penv)->GetObjectRefType(penv, ref))
-    {
-    case JNILocalRefType:
-        (*penv)->DeleteLocalRef(penv, ref);
-        break;
-    case JNIGlobalRefType:
-        (*penv)->DeleteGlobalRef(penv, ref);
-        break;
-    default:
-        /* do nothing */
-        break;
-    }
 }
 
 jstring java_from_utf8(const char *utf8, size_t size)
@@ -410,7 +394,7 @@ jstring java_from_utf8(const char *utf8, size_t size)
             bytes, str_utf8);
 
     /* Clear reference */
-    java_clear_ref(bytes);
+    (*penv)->DeleteLocalRef(penv, bytes);
 
     return str;
 }
@@ -428,7 +412,7 @@ char *java_to_utf8(jstring str, size_t *newsize)
     (*penv)->GetByteArrayRegion(penv, bytes, 0, len, (jbyte*)utf8);
 
     /* Clear reference */
-    java_clear_ref(bytes);
+    (*penv)->DeleteLocalRef(penv, bytes);
 
     /* NULL-terminate it */
     utf8[len] = '\0';

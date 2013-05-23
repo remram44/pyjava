@@ -90,12 +90,6 @@ const char *java_getclassname(jclass javaclass, size_t *size);
 
 
 /**
- * Clear a local or global ref to a Java object.
- */
-void java_clear_ref(jobject ref);
-
-
-/**
  * Create a Java string from standard UTF-8.
  *
  * Java's string functions expect a modified UTF-8 encoding which noone else

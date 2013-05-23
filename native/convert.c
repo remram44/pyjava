@@ -690,7 +690,7 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
             javaclass,
             meth_Class_getField,
             javaname);
-    java_clear_ref(javaname);
+    (*penv)->DeleteLocalRef(penv, javaname);
 
     /* object can't be if the nonstatic fields are requested */
     assert(object != NULL || !(type & FIELD_NONSTATIC));
@@ -728,8 +728,8 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
         else
             pyobj = convert_getjavastaticfield(javaclass, id, type);
 
-        java_clear_ref(javafield);
-        java_clear_ref(javatype);
+        (*penv)->DeleteLocalRef(penv, javafield);
+        (*penv)->DeleteLocalRef(penv, javatype);
 
         return pyobj;
     }
