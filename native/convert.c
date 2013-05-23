@@ -685,15 +685,15 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
     char is_static;
     jstring javaname = java_from_utf8(name, strlen(name));
 
+    /* object can't be null if the nonstatic fields are requested */
+    assert(object != NULL || !(type & FIELD_NONSTATIC));
+
     javafield = (*penv)->CallObjectMethod(
             penv,
             javaclass,
             meth_Class_getField,
             javaname);
     (*penv)->DeleteLocalRef(penv, javaname);
-
-    /* object can't be if the nonstatic fields are requested */
-    assert(object != NULL || !(type & FIELD_NONSTATIC));
 
     if(javafield == NULL)
     {
@@ -711,7 +711,10 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
 
     if( (is_static && !(type & FIELD_STATIC))
      || (!is_static && !(type & FIELD_NONSTATIC)) )
+    {
+        (*penv)->DeleteLocalRef(penv, javafield);
         return NULL; /* field doesn't have the required type */
+    }
 
     javatype = (*penv)->CallObjectMethod(
             penv,
