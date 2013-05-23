@@ -424,11 +424,14 @@ char *java_to_utf8(jstring str, size_t *newsize)
             str_utf8);
 
     size_t len = (*penv)->GetArrayLength(penv, bytes);
-    char *utf8 = malloc(len);
+    char *utf8 = malloc(len + 1);
     (*penv)->GetByteArrayRegion(penv, bytes, 0, len, (jbyte*)utf8);
 
     /* Clear reference */
     java_clear_ref(bytes);
+
+    /* NULL-terminate it */
+    utf8[len] = '\0';
 
     if(newsize != NULL)
         *newsize = len;
