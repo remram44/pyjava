@@ -149,14 +149,61 @@ class Test_get_field(unittest.TestCase):
         self.assertIsNotNone(empty_list)
         self.assertEqual(empty_list.size(), 0)
 
-    def test_nonexistent(self):
-        """Requests a wrapper for an unknown field/method.
+    def test_nonexistent_instance(self):
+        """Requests an unknown field/method on an instance.
+
+        This should be detected immediately.
+        """
+        Dimension = _pyjava.getclass('java/awt/Dimension')
+        d = Dimension()
+        with self.assertRaises(AttributeError):
+            d.nonExistentField
+
+    def test_nonexistent_class(self):
+        """Requests an unknown field/method on a class.
 
         This should be detected immediately.
         """
         Math = _pyjava.getclass('java/lang/Math')
         with self.assertRaises(AttributeError):
             Math.nonExistentField
+
+
+class Test_set_field(unittest.TestCase):
+    def test_field(self):
+        """Sets a well-known field.
+        """
+        Dimension = _pyjava.getclass('java/awt/Dimension')
+        d = Dimension()
+        d.width = 42
+        self.assertEqual(d.width, 42)
+
+    def test_staticfield(self):
+        """Sets a static field.
+        """
+        # TODO
+        self.fail("Not implemented")
+
+    def test_nonexistent_instance(self):
+        """Sets an unknown field on an instance.
+        """
+        Dimension = _pyjava.getclass('java/awt/Dimension')
+        d = Dimension()
+        with self.assertRaises(AttributeError):
+            d.nonExistentField = 42
+
+    def test_nonexistent_class(self):
+        """Sets an unknown field on a class.
+        """
+        Dimension = _pyjava.getclass('java/awt/Dimension')
+        with self.assertRaises(AttributeError):
+            Dimension.nonExistentField = 42
+
+    def test_wrongtype(self):
+        """Assigns values of different types to fields.
+        """
+        # TODO
+        self.fail("Not implemented")
 
 
 class Test_accessfield(unittest.TestCase):
