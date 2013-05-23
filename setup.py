@@ -115,6 +115,7 @@ setup(name='PyJava',
       url='http://github.com/remram44/pyjava',
       long_description=description,
       license='MIT',
+      keywords=['java', 'bridge', 'jni'],
       classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: MIT License",

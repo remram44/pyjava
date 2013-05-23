@@ -83,7 +83,7 @@ class Test_get_method(unittest.TestCase):
         obj1 = makeObject(1)
         obj2 = makeObject(2)
         obj3 = makeObject(1)
-        # == here tests Java reference equality, it does not all equals()
+        # == here tests Java reference equality, it does not call equals()
         self.assertTrue(obj1 == obj1)
         self.assertTrue(obj2 == obj2)
         self.assertTrue(obj3 == obj3)
