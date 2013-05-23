@@ -737,3 +737,218 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
         return pyobj;
     }
 }
+
+static void convert_setjavainstfield(jobject object, jclass javatype,
+        jfieldID id, PyObject *pyobj)
+{
+    enum CVT_JType type = convert_id_type(javatype);
+
+    if(JTYPE_PRIMITIVE(type))
+    {
+        switch(type)
+        {
+        case CVT_J_BOOLEAN:
+            (*penv)->SetBooleanField(penv, object, id,
+                                     (pyobj == Py_True)?JNI_TRUE:JNI_FALSE);
+            break;
+        case CVT_J_BYTE:
+            (*penv)->SetByteField(penv, object, id,
+                                  PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_CHAR:
+            if(PyString_Check(pyobj))
+                (*penv)->SetCharField(penv, object, id,
+                                      PyString_AsString(pyobj)[0]);
+            else /* PyUnicode_Check(pyobj) */
+            {
+                /*
+                 * Hmm, this is supposed to be UCS2... but Java provides only
+                 * 16 bits as well...
+                 */
+                (*penv)->SetCharField(penv, object, id,
+                                      PyUnicode_AS_UNICODE(pyobj)[0]);
+            }
+            break;
+        case CVT_J_SHORT:
+            (*penv)->SetShortField(penv, object, id, PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_INT:
+            (*penv)->SetIntField(penv, object, id, PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_LONG:
+            (*penv)->SetLongField(penv, object, id, PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_FLOAT:
+            (*penv)->SetFloatField(penv, object, id, PyFloat_AsDouble(pyobj));
+            break;
+        case CVT_J_DOUBLE:
+            (*penv)->SetDoubleField(penv, object, id, PyFloat_AsDouble(pyobj));
+            break;
+        default:
+            assert(0); /* can't happen */
+        }
+    }
+    else if(pyobj == Py_None)
+        (*penv)->SetObjectField(penv, object, id, NULL);
+    else
+    {
+        jobject javaobj;
+        if(javawrapper_unwrap_instance(pyobj, &javaobj, NULL))
+            (*penv)->SetObjectField(penv, object, id, javaobj);
+        else
+        {
+            /* Special case: String objects can be created from unicode, which
+             * makes sense. They can get converted back when received from
+             * Java. */
+            PyObject *pyutf8 = PyUnicode_AsUTF8String(pyobj);
+            const char *utf8 = PyString_AsString(pyutf8);
+            size_t size = PyString_GET_SIZE(pyutf8);
+            (*penv)->SetObjectField(penv, object, id,
+                                    java_from_utf8(utf8, size));
+            Py_DECREF(pyutf8);
+        }
+    }
+}
+
+static void convert_setjavastaticfield(jclass javaclass, jclass javatype,
+        jfieldID id, PyObject *pyobj)
+{
+    enum CVT_JType type = convert_id_type(javatype);
+
+    if(JTYPE_PRIMITIVE(type))
+    {
+        switch(type)
+        {
+        case CVT_J_BOOLEAN:
+            (*penv)->SetStaticBooleanField(
+                    penv, javaclass, id,
+                    (pyobj == Py_True)?JNI_TRUE:JNI_FALSE);
+            break;
+        case CVT_J_BYTE:
+            (*penv)->SetStaticByteField(penv, javaclass, id,
+                                        PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_CHAR:
+            if(PyString_Check(pyobj))
+                (*penv)->SetStaticCharField(penv, javaclass, id,
+                                            PyString_AsString(pyobj)[0]);
+            else /* PyUnicode_Check(pyobj) */
+            {
+                /*
+                 * Hmm, this is supposed to be UCS2... but Java provides only
+                 * 16 bits as well...
+                 */
+                (*penv)->SetStaticCharField(penv, javaclass, id,
+                                            PyUnicode_AS_UNICODE(pyobj)[0]);
+            }
+            break;
+        case CVT_J_SHORT:
+            (*penv)->SetStaticShortField(penv, javaclass, id,
+                                         PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_INT:
+            (*penv)->SetStaticIntField(penv, javaclass, id,
+                                       PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_LONG:
+            (*penv)->SetStaticLongField(penv, javaclass, id,
+                                        PyInt_AsLong(pyobj));
+            break;
+        case CVT_J_FLOAT:
+            (*penv)->SetStaticFloatField(penv, javaclass, id,
+                                         PyFloat_AsDouble(pyobj));
+            break;
+        case CVT_J_DOUBLE:
+            (*penv)->SetStaticDoubleField(penv, javaclass, id,
+                                          PyFloat_AsDouble(pyobj));
+            break;
+        default:
+            assert(0); /* can't happen */
+        }
+    }
+    else if(pyobj == Py_None)
+        (*penv)->SetStaticObjectField(penv, javaclass, id, NULL);
+    else
+    {
+        jobject javaobj;
+        if(javawrapper_unwrap_instance(pyobj, &javaobj, NULL))
+            (*penv)->SetStaticObjectField(penv, javaclass, id, javaobj);
+        else
+        {
+            /* Special case: String objects can be created from unicode, which
+             * makes sense. They can get converted back when received from
+             * Java. */
+            PyObject *pyutf8 = PyUnicode_AsUTF8String(pyobj);
+            const char *utf8 = PyString_AsString(pyutf8);
+            size_t size = PyString_GET_SIZE(pyutf8);
+            (*penv)->SetStaticObjectField(penv, javaclass, id,
+                                          java_from_utf8(utf8, size));
+            Py_DECREF(pyutf8);
+        }
+    }
+}
+
+int convert_setjavafield(jclass javaclass, jobject object,
+        const char *name, int type, PyObject *value)
+{
+    jobject javafield;
+    jclass javatype;
+    jint modifiers;
+    char is_static;
+    jstring javaname = java_from_utf8(name, strlen(name));
+
+    /* object can't be null if the nonstatic fields are requested */
+    assert(object != NULL || !(type & FIELD_NONSTATIC));
+
+    javafield = (*penv)->CallObjectMethod(
+            penv,
+            javaclass,
+            meth_Class_getField,
+            javaname);
+    (*penv)->DeleteLocalRef(penv, javaname);
+
+    if(javafield == NULL)
+    {
+        (*penv)->ExceptionClear(penv);
+        return 0; /* no field with that name */
+    }
+
+    modifiers = (*penv)->CallIntMethod(
+            penv,
+            javafield, meth_Field_getModifiers);
+    is_static = (*penv)->CallStaticBooleanMethod(
+            penv,
+            class_Modifier, meth_Modifier_isStatic,
+            modifiers) != JNI_FALSE;
+
+    if( (is_static && !(type & FIELD_STATIC))
+     || (!is_static && !(type & FIELD_NONSTATIC)) )
+    {
+        (*penv)->DeleteLocalRef(penv, javafield);
+        return 0; /* field doesn't have the required type */
+    }
+
+    javatype = (*penv)->CallObjectMethod(
+            penv,
+            javafield,
+            meth_Field_getType);
+
+    {
+        int success = 0;
+        if(convert_check_py2jav(value, javatype))
+        {
+            /* Field type is compatible */
+            jfieldID id = (*penv)->FromReflectedField(penv, javafield);
+            if(!is_static)
+                convert_setjavainstfield(object, javatype, id, value);
+            else
+                convert_setjavastaticfield(javaclass, javatype, id, value);
+            success = 1;
+        }
+
+        (*penv)->DeleteLocalRef(penv, javafield);
+        (*penv)->DeleteLocalRef(penv, javatype);
+
+        return success;
+    }
+}

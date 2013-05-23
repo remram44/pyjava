@@ -69,4 +69,18 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
 PyObject *convert_getjavafield(jclass javaclass, jobject object,
         const char *name, int type);
 
+
+/**
+ * Sets a field on a Java class or instance to the given Python object.
+ *
+ * This function takes the class, the object (or NULL), the name of the field
+ * and the Python object, and sets it using the correct Get<type>Field()
+ * function.
+ *
+ * If there is no field by that name, or if the type doesn't match, returns
+ * 0 (doesn't set an exception). Else, returns 1.
+ */
+int convert_setjavafield(jclass javaclass, jobject javaobject,
+        const char *name, int type, PyObject *value);
+
 #endif

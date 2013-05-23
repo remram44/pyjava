@@ -358,6 +358,33 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
     return NULL;
 }
 
+static int JavaInstance_setattr(PyObject *v_self, PyObject *attr_name,
+        PyObject *value)
+{
+    JavaInstance *self = (JavaInstance*)v_self;
+    jclass javaclass;
+    const char *name = PyString_AsString(attr_name); /* UTF-8 */
+    if(name == NULL)
+        return -1; /* TypeError from PyString_AsString() */
+    javaclass = java_getclass(self->javaobject);
+
+    if(convert_setjavafield(javaclass, self->javaobject, name, FIELD_NONSTATIC,
+                            value))
+    {
+        (*penv)->DeleteLocalRef(penv, javaclass);
+        return 0;
+    }
+    else
+    {
+        PyErr_Format(
+                PyExc_AttributeError,
+                "Java class has no nonstatic attribute %s",
+                name);
+        (*penv)->DeleteLocalRef(penv, javaclass);
+        return -1;
+    }
+}
+
 static void JavaInstance_dealloc(PyObject *v_self)
 {
     JavaInstance *self = (JavaInstance*)v_self;
@@ -387,7 +414,7 @@ static PyTypeObject JavaInstance_type = {
     0,                         /*tp_call*/
     0,                         /*tp_str*/
     JavaInstance_getattr,      /*tp_getattro*/
-    0,                         /*tp_setattro*/
+    JavaInstance_setattr,      /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
     "Java object wrapper",     /*tp_doc*/
@@ -532,6 +559,26 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
     return NULL;
 }
 
+static int JavaClass_setattr(PyObject *v_self, PyObject *attr_name,
+        PyObject *value)
+{
+    JavaClass *self = (JavaClass*)v_self;
+    const char *name = PyString_AsString(attr_name); /* UTF-8 */
+    if(name == NULL)
+        return -1; /* TypeError from PyString_AsString() */
+
+    if(convert_setjavafield(self->javaclass, NULL, name, FIELD_STATIC, value))
+        return 0;
+    else
+    {
+        PyErr_Format(
+                PyExc_AttributeError,
+                "Java class has no static attribute %s",
+                name);
+        return -1;
+    }
+}
+
 static void JavaClass_dealloc(PyObject *v_self)
 {
     JavaClass *self = (JavaClass*)v_self;
@@ -563,7 +610,7 @@ static PyTypeObject JavaClass_type = {
     JavaClass_create,          /*tp_call*/
     0,                         /*tp_str*/
     JavaClass_getattr,         /*tp_getattro*/
-    0,                         /*tp_setattro*/
+    JavaClass_setattr,         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT |
       Py_TPFLAGS_BASETYPE,     /*tp_flags*/
