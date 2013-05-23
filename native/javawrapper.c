@@ -307,14 +307,6 @@ typedef struct _S_JavaInstance {
     jobject javaobject;
 } JavaInstance;
 
-static PyObject *JavaInstance_getclass(JavaInstance *self, PyObject *args)
-{
-    if(!PyArg_ParseTuple(args, ""))
-        return NULL;
-
-    return javawrapper_wrap_class(java_getclass(self->javaobject));
-}
-
 static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
 {
     JavaInstance *self = (JavaInstance*)v_self;
@@ -361,15 +353,6 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
     return NULL;
 }
 
-static PyMethodDef JavaInstance_methods[] = {
-    {"getclass", (PyCFunction)JavaInstance_getclass, METH_VARARGS,
-    "call() -> JavaClass\n"
-    "\n"
-    "Returns the class of this object."
-    },
-    {NULL}  /* Sentinel */
-};
-
 static PyTypeObject JavaInstance_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -399,7 +382,7 @@ static PyTypeObject JavaInstance_type = {
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
-    JavaInstance_methods,      /*tp_methods*/
+    0,                         /*tp_methods*/
     0,                         /*tp_members*/
     0,                         /*tp_getset*/
     0,                         /*tp_base*/
