@@ -576,51 +576,6 @@ static PyTypeObject JavaClass_type = {
  * javawrapper_wrap_class() is called by pyjava_getclass() to obtain a wrapper.
  */
 
-/**
- * _pyjava.issubclass function: subclass check.
- */
-PyObject *javawrapper_issubclass(PyObject *self, PyObject *args)
-{
-    JavaClass *class1, *class2;
-
-    if(!(PyArg_ParseTuple(args, "OO", &class1, &class2)))
-        return NULL;
-
-    if(java_is_subclass(class1->javaclass, class2->javaclass))
-    {
-        Py_INCREF(Py_True);
-        return Py_True;
-    }
-    else
-    {
-        Py_INCREF(Py_False);
-        return Py_False;
-    }
-}
-
-/**
- * _pyjava.issameobject function: check that two JavaInstance object are the
- * same reference.
- */
-PyObject *javawrapper_issameobject(PyObject *self, PyObject *args)
-{
-    JavaInstance *inst1, *inst2;
-
-    if(!(PyArg_ParseTuple(args, "OO", &inst1, &inst2)))
-        return NULL;
-
-    if(inst1->javaobject == inst2->javaobject)
-    {
-        Py_INCREF(Py_True);
-        return Py_True;
-    }
-    else
-    {
-        Py_INCREF(Py_False);
-        return Py_False;
-    }
-}
-
 void javawrapper_init(PyObject *mod)
 {
     if(PyType_Ready(&JavaInstance_type) < 0)

@@ -110,16 +110,6 @@ static PyMethodDef methods[] = {
     "getclass(str) -> JavaClass\n"
     "\n"
     "Find the desired class and returns a wrapper."},
-    {"issubclass",  javawrapper_issubclass, METH_VARARGS,
-    "issubclass(A: javaclass, B: javaclass) -> bool\n"
-    "\n"
-    "Checks whether A is a subclass of B."},
-    {"issameobject",  javawrapper_issameobject, METH_VARARGS,
-    "issameobject(a, b) -> bool\n"
-    "\n"
-    "Checks whether a and b are the same Java object, i.e. tests the == "
-    "operator of\nJava. This compares the references; if you want the "
-    "equals() method, call it."},
     {NULL, NULL, 0, NULL}
 };
 

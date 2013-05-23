@@ -34,16 +34,4 @@ int javawrapper_unwrap_instance(PyObject *pyobject,
  */
 PyObject *javawrapper_wrap_instance(jobject javaobject);
 
-
-/**
- * The _pyjava.issubclass() function.
- */
-PyObject *javawrapper_issubclass(PyObject *self, PyObject *args);
-
-
-/**
- * The _pyjava.issameobject() function.
- */
-PyObject *javawrapper_issameobject(PyObject *self, PyObject *args);
-
 #endif
