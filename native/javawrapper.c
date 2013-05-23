@@ -151,6 +151,8 @@ static void UnboundMethod_dealloc(PyObject *v_self)
 
     if(self->overloads != NULL)
         java_free_methods(self->overloads);
+    if(self->javaclass != NULL)
+        java_clear_ref(self->javaclass);
 
     self->ob_type->tp_free(self);
 }
@@ -243,6 +245,10 @@ static void BoundMethod_dealloc(PyObject *v_self)
 
     if(self->overloads != NULL)
         java_free_methods(self->overloads);
+    if(self->javaclass != NULL)
+        java_clear_ref(self->javaclass);
+    if(self->javainstance != NULL)
+        java_clear_ref(self->javainstance);
 
     self->ob_type->tp_free(self);
 }
