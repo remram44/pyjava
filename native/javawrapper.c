@@ -226,7 +226,9 @@ static PyObject *BoundMethod_call(PyObject *v_self,
 
     /* args = (self,) + args */
     {
-        PyObject *first_arg = Py_BuildValue("(O)", self->javainstance);
+        PyObject *wrapped_obj = javawrapper_wrap_instance(self->javainstance);
+        PyObject *first_arg = Py_BuildValue("(O)", wrapped_obj);
+        Py_DECREF(wrapped_obj);
         args = PySequence_Concat(first_arg, args);
         /* the original 'args' object is deleted by Python anyway */
         Py_DECREF(first_arg);
