@@ -310,9 +310,13 @@ typedef struct _S_JavaInstance {
 static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
 {
     JavaInstance *self = (JavaInstance*)v_self;
+    Py_ssize_t namelen;
+    jclass javaclass;
     const char *name = PyString_AsString(attr_name); /* UTF-8 */
-    Py_ssize_t namelen = PyString_GET_SIZE(attr_name);
-    jclass javaclass = java_getclass(self->javaobject);
+    if(name == NULL)
+        return NULL; /* TypeError from PyString_AsString() */
+    namelen = PyString_GET_SIZE(attr_name);
+    javaclass = java_getclass(self->javaobject);
 
     /* First, try to find a method with that name, in that class.
      * If at least one such method exists, we return a BoundMethod. */
@@ -485,8 +489,11 @@ static PyObject *JavaClass_create(PyObject *v_self,
 static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
 {
     JavaClass *self = (JavaClass*)v_self;
+    Py_ssize_t namelen;
     const char *name = PyString_AsString(attr_name); /* UTF-8 */
-    Py_ssize_t namelen = PyString_GET_SIZE(attr_name);
+    if(name == NULL)
+        return NULL; /* TypeError from PyString_AsString() */
+    namelen = PyString_GET_SIZE(attr_name);
 
     /* First, try to find a method with that name, in that class.
      * If at least one such method exists, we return an UnboundMethod. */
