@@ -315,6 +315,52 @@ static PyObject *JavaInstance_getclass(JavaInstance *self, PyObject *args)
     return javawrapper_wrap_class(java_getclass(self->javaobject));
 }
 
+static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
+{
+    JavaInstance *self = (JavaInstance*)v_self;
+    const char *name = PyString_AsString(attr_name); /* UTF-8 */
+    Py_ssize_t namelen = PyString_GET_SIZE(attr_name);
+    jclass javaclass = java_getclass(self->javaobject);
+
+    /* First, try to find a method with that name, in that class.
+     * If at least one such method exists, we return a BoundMethod. */
+    {
+        java_Methods *methods = java_list_methods(javaclass, name,
+                                                  LIST_ALL);
+        if(methods != NULL)
+        {
+            BoundMethod *wrapper = PyObject_NewVar(BoundMethod,
+                    &BoundMethod_type, namelen);
+            wrapper->javaclass = javaclass;
+            wrapper->javainstance = self->javaobject;
+            wrapper->overloads = methods;
+            memcpy(wrapper->name, name, namelen);
+            wrapper->name[namelen] = '\0';
+
+            return (PyObject*)wrapper;
+        }
+    }
+
+    /* Then, try a field (static or nonstatic) */
+    {
+        PyObject *field = convert_getjavafield(javaclass, self->javaobject,
+                                               name, FIELD_BOTH);
+        if(field != NULL)
+        {
+            java_clear_ref(javaclass);
+            return field;
+        }
+    }
+
+    /* We didn't find anything, raise AttributeError */
+    PyErr_Format(
+            PyExc_AttributeError,
+            "Java instance has no attribute %s",
+            name);
+    java_clear_ref(javaclass);
+    return NULL;
+}
+
 static PyMethodDef JavaInstance_methods[] = {
     {"getclass", (PyCFunction)JavaInstance_getclass, METH_VARARGS,
     "call() -> JavaClass\n"
@@ -342,7 +388,7 @@ static PyTypeObject JavaInstance_type = {
     0,                         /*tp_hash */
     0,                         /*tp_call*/
     0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
+    JavaInstance_getattr,      /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
@@ -469,7 +515,7 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
     /* Then, try a field (static) */
     {
         PyObject *field = convert_getjavafield(self->javaclass, NULL, name,
-                                                FIELD_STATIC);
+                                               FIELD_STATIC);
         if(field != NULL)
             return field;
     }
