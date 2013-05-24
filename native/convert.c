@@ -141,8 +141,24 @@ int convert_check_py2jav(PyObject *pyobj, jclass javatype)
         else
         {
             /* Special case: We can convert a unicode object to String */
-            if(java_equals(javatype, class_String) && PyUnicode_Check(pyobj))
-                return 1;
+            if(java_equals(javatype, class_String))
+            {
+                /* Already unicode */
+                if(PyUnicode_Check(pyobj))
+                    return 1;
+                else
+                {
+                    /* Other types might be coercible to unicode */
+                    PyObject *unicode = PyObject_Unicode(pyobj);
+                    if(unicode != NULL)
+                    {
+                        Py_DECREF(unicode);
+                        return 1;
+                    }
+                    else
+                        PyErr_Clear();
+                }
+            }
         }
 
         return 0;
@@ -207,11 +223,13 @@ void convert_py2jav(PyObject *pyobj, jclass javatype, jvalue *javavalue)
             /* Special case: String objects can be created from unicode, which
              * makes sense. They can get converted back when received from
              * Java. */
-            PyObject *pyutf8 = PyUnicode_AsUTF8String(pyobj);
+            PyObject *unicode = PyObject_Unicode(pyobj);
+            PyObject *pyutf8 = PyUnicode_AsUTF8String(unicode);
             const char *utf8 = PyString_AsString(pyutf8);
             size_t size = PyString_GET_SIZE(pyutf8);
             javavalue->l = java_from_utf8(utf8, size);
             Py_DECREF(pyutf8);
+            Py_DECREF(unicode);
         }
     }
 }
