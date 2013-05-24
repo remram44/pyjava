@@ -231,6 +231,28 @@ class Test_accessfield(unittest.TestCase):
         self.assertEqual(obj.f, '4')
 
 
+class Test_stringconversion(unittest.TestCase):
+    """Specific tests for Python to Java String conversions.
+    """
+    def test_unicode(self):
+        String = _pyjava.getclass('java/lang/String')
+        s = String(u'lala')
+        self.assertEqual(s.length(), 4)
+        t = String(u'something\u263Aelse')
+        self.assertEqual(t.length(), 14)
+        u = String(u'embedded\0zero')
+        self.assertEqual(u.length(), 13)
+
+    def test_str(self):
+        String = _pyjava.getclass('java/lang/String')
+        s = String(b'lol') # Implicit conversion for ASCII
+        self.assertEqual(s.length(), 3)
+        with self.assertRaises(_pyjava.NoMatchingOverload):
+            t = String(b'r\xE9mi') # FIXME : exception is not very explicit
+        u = String('embedded\0zero')
+        self.assertEqual(u.length(), 13)
+
+
 class Test_conversions(unittest.TestCase):
     """Big set of method calls to cover the conversions.
     """
