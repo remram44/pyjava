@@ -131,7 +131,7 @@ PyObject *_method_call(java_Methods *overloads, int bound,
  */
 
 typedef struct _S_UnboundMethod {
-    PyObject_HEAD
+    PyObject_VAR_HEAD
     jclass javaclass;
     java_Methods *overloads;
     char name[1];
@@ -214,7 +214,7 @@ static PyTypeObject UnboundMethod_type = {
  */
 
 typedef struct _S_BoundMethod {
-    PyObject_HEAD
+    PyObject_VAR_HEAD
     jclass javaclass;
     jobject javainstance;
     java_Methods *overloads;
