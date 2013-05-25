@@ -322,7 +322,7 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
      * If at least one such method exists, we return a BoundMethod. */
     {
         java_Methods *methods = java_list_methods(javaclass, name,
-                                                  LIST_ALL);
+                                                  FIELD_BOTH);
         if(methods != NULL)
         {
             BoundMethod *wrapper = PyObject_NewVar(BoundMethod,
@@ -526,7 +526,7 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
      * If at least one such method exists, we return an UnboundMethod. */
     {
         java_Methods *methods = java_list_methods(self->javaclass, name,
-                                                  LIST_ALL);
+                                                  FIELD_BOTH);
         if(methods != NULL)
         {
             UnboundMethod *wrapper = PyObject_NewVar(UnboundMethod,

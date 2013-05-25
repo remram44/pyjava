@@ -40,9 +40,9 @@ typedef struct _S_java_Methods {
 void java_init(void);
 
 
-#define LIST_STATIC         0x1
-#define LIST_NONSTATIC      0x2
-#define LIST_ALL            (LIST_STATIC | LIST_NONSTATIC)
+#define FIELD_STATIC    0x1
+#define FIELD_NONSTATIC 0x2
+#define FIELD_BOTH      (FIELD_STATIC | FIELD_NONSTATIC)
 
 /**
  * Returns all the Java methods with a given name, or NULL if none is found.

@@ -53,10 +53,6 @@ PyObject *convert_calljava_static(jclass javaclass, jmethodID method,
         jvalue *params, jclass returntype);
 
 
-#define FIELD_STATIC    0x1
-#define FIELD_NONSTATIC 0x2
-#define FIELD_BOTH      (FIELD_STATIC | FIELD_NONSTATIC)
-
 /**
  * Convert the value of a Java field as a Python object.
  *

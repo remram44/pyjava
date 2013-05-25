@@ -266,8 +266,8 @@ static java_Methods *_java_list_overloads(jclass javaclass,
                     modifiers) != JNI_FALSE;
         }
 
-        if( (is_static && !(what & LIST_STATIC))
-         || (!is_static && !(what & LIST_NONSTATIC)) )
+        if( (is_static && !(what & FIELD_STATIC))
+         || (!is_static && !(what & FIELD_NONSTATIC)) )
             continue;
 
         /* Class[] parameter_types = method.getParameterTypes() */
@@ -340,7 +340,7 @@ java_Methods *java_list_methods(jclass javaclass,
 
 java_Methods *java_list_constructors(jclass javaclass)
 {
-    return _java_list_overloads(javaclass, "<init>", 1, LIST_STATIC);
+    return _java_list_overloads(javaclass, "<init>", 1, FIELD_STATIC);
 }
 
 void java_free_methods(java_Methods *methods)
