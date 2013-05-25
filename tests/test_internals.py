@@ -235,6 +235,31 @@ class Test_accessfield(unittest.TestCase):
         self.assertEqual(obj.f, '4')
 
 
+class Test_reflection(unittest.TestCase):
+    def test_forname(self):
+        """Uses Class.forName().
+        """
+        Class = _pyjava.getclass('java/lang/Class')
+        String = Class.forName(u'java.lang.String')
+        self.assertIsInstance(String, _pyjava.JavaClass)
+        self.assertEqual(String(u'lala').length(), 4)
+        String2 = _pyjava.getclass('java/lang/String')
+        self.assertEqual(String, String2)
+
+        with self.assertRaises(AttributeError):
+            # forName() is static and can only be accessed from Class
+            String2.forName
+
+    def test_nonstatic_method(self):
+        """Access a non-static Class method.
+        """
+        String = _pyjava.getclass('java/lang/String')
+        self.assertEqual(String.getName(), u'java.lang.String')
+        Class = _pyjava.getclass('java/lang/Class')
+        self.assertEqual(Class.getName(), u'java.lang.Class')
+        self.assertEqual(Class.getName(String), u'java.lang.String')
+
+
 class Test_conversions(unittest.TestCase):
     """Big set of method calls to cover the conversions.
     """

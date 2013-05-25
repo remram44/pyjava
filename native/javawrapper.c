@@ -82,6 +82,13 @@ PyObject *_method_call(java_Methods *overloads, int bound,
     size_t nonmatchs;
     java_Method *matching_method = find_matching_overload(overloads,
             args, &nonmatchs, what);
+
+    /* If bound, we can only call non-static methods. This happens in
+     * BoundMethod_call and ClassMethod_call.
+     * If unbound, we might want to call both (from UnboundMethod_call) or only
+     * static (from ClassMethod_call). */
+    assert(!bound || what == FIELD_NONSTATIC);
+
     if(matching_method == NULL)
     {
         size_t nbargs = PyTuple_Size(args);
@@ -289,6 +296,111 @@ static PyTypeObject BoundMethod_type = {
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
     "Java bound method",       /*tp_doc*/
+    0,                         /*tp_traverse*/
+    0,                         /*tp_clear*/
+    0,                         /*tp_richcompare*/
+    0,                         /*tp_weaklistoffset*/
+    0,                         /*tp_iter*/
+    0,                         /*tp_iternext*/
+    0,                         /*tp_methods*/
+    0,                         /*tp_members*/
+    0,                         /*tp_getset*/
+    0,                         /*tp_base*/
+    0,                         /*tp_dict*/
+    0,                         /*tp_descr_get*/
+    0,                         /*tp_descr_set*/
+    0,                         /*tp_dictoffset*/
+    0,                         /*tp_init*/
+    0,                         /*tp_alloc*/
+    PyType_GenericNew,         /*tp_new*/
+};
+
+
+/*==============================================================================
+ * ClassMethod type.
+ *
+ * This represents a Class method obtained from a JavaClass.
+ * If the class is Java's Class, 'overloads' contains static methods that we
+ * don't want to be bound to the class object, but if a non-static method is
+ * call, we want it to be bound to the class object. It contains the jclass,
+ * the jobject, and the name of the method.
+ * There is no jmethodID here because this object wraps all the Java methods
+ * with the same name, and the actual decision will occur when the call is
+ * made (and the parameter types are known).
+ */
+
+typedef struct _S_ClassMethod {
+    PyObject_VAR_HEAD
+    jclass javaclass;
+    java_Methods *overloads;
+    char name[1];
+} ClassMethod;
+
+static PyObject *ClassMethod_call(PyObject *v_self,
+        PyObject *args, PyObject *kwargs)
+{
+    ClassMethod *self = (ClassMethod*)v_self;
+
+    {
+        PyObject *b_args;
+        PyObject *result;
+        /* b_args = (self,) + args */
+        {
+            PyObject *wrapped_obj = javawrapper_wrap_class(self->javaclass);
+            PyObject *first_arg = Py_BuildValue("(O)", wrapped_obj);
+            Py_DECREF(wrapped_obj);
+            b_args = PySequence_Concat(first_arg, args);
+            Py_DECREF(first_arg);
+        }
+
+        /* Attempts bound method call */
+        result = _method_call(self->overloads, 1, class_Class, b_args,
+                              FIELD_NONSTATIC);
+        if(result != NULL)
+            return result;
+        PyErr_Clear();
+    }
+
+    /* Attempts unbound method call (static only) */
+    return _method_call(self->overloads, 0, self->javaclass, args,
+                        FIELD_STATIC);
+}
+
+static void ClassMethod_dealloc(PyObject *v_self)
+{
+    ClassMethod *self = (ClassMethod*)v_self;
+
+    if(self->overloads != NULL)
+        java_free_methods(self->overloads);
+    if(self->javaclass != NULL)
+        (*penv)->DeleteGlobalRef(penv, self->javaclass);
+
+    self->ob_type->tp_free(self);
+}
+
+static PyTypeObject ClassMethod_type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "pyjava.ClassMethod",      /*tp_name*/
+    sizeof(ClassMethod),       /*tp_basicsize*/
+    1,                         /*tp_itemsize*/
+    ClassMethod_dealloc,       /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    ClassMethod_call,          /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    "Java class method",       /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
     0,                         /*tp_richcompare*/
@@ -537,6 +649,7 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
 
     /* First, try to find a method with that name, in that class.
      * If at least one such method exists, we return an UnboundMethod. */
+    if(!(*penv)->IsSameObject(penv, self->javaclass, class_Class))
     {
         java_Methods *methods = java_list_methods(self->javaclass, name,
                                                   FIELD_BOTH);
@@ -562,7 +675,29 @@ static PyObject *JavaClass_getattr(PyObject *v_self, PyObject *attr_name)
     }
 
     /* Finally, act on the Class object (reflection) */
-    /* TODO */
+    {
+        /* If calling from Class, we can access all methods; if calling on
+         * another Class instance, don't access the static methods */
+        int list_what = (*penv)->IsSameObject(penv, class_Class,
+                                              self->javaclass)?
+                FIELD_BOTH:FIELD_NONSTATIC;
+        java_Methods *methods = java_list_methods(class_Class, name,
+                                                  list_what);
+        if(methods != NULL)
+        {
+            /* A different kind of wrapper is used here because we need a
+             * non-static Class method to be bound to javaclass but a static
+             * Class method not to be (obviously, it's static). */
+            ClassMethod *wrapper = PyObject_NewVar(ClassMethod,
+                    &ClassMethod_type, namelen);
+            wrapper->javaclass = (*penv)->NewGlobalRef(penv, self->javaclass);
+            wrapper->overloads = methods;
+            memcpy(wrapper->name, name, namelen);
+            wrapper->name[namelen] = '\0';
+
+            return (PyObject*)wrapper;
+        }
+    }
 
     /* We didn't find anything, raise AttributeError */
     PyErr_Format(
@@ -754,6 +889,11 @@ void javawrapper_init(PyObject *mod)
         return;
     Py_INCREF(&BoundMethod_type);
     PyModule_AddObject(mod, "BoundMethod", (PyObject*)&BoundMethod_type);
+
+    if(PyType_Ready(&ClassMethod_type) < 0)
+        return;
+    Py_INCREF(&ClassMethod_type);
+    PyModule_AddObject(mod, "ClassMethod", (PyObject*)&ClassMethod_type);
 }
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
