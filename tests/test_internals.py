@@ -77,22 +77,26 @@ class Test_get_method(unittest.TestCase):
     def test_is_same_object(self):
         """Tests for equality of references.
         """
-        jcl = _pyjava.getclass(
-                'pyjavatest/ObjFactory')
+        jcl = _pyjava.getclass('pyjavatest/ObjFactory')
         makeObject = jcl.makeObject
         obj1 = makeObject(1)
         obj2 = makeObject(2)
-        obj3 = makeObject(1)
+        obj3 = makeObject(2)
         # == here tests Java reference equality, it does not call equals()
         self.assertTrue(obj1 == obj1)
         self.assertTrue(obj2 == obj2)
         self.assertTrue(obj3 == obj3)
         self.assertFalse(obj1 == obj2)
-        self.assertFalse(obj2 == obj3)
-        self.assertTrue(obj3 == obj1)
+        self.assertTrue(obj2 == obj3)
+        self.assertFalse(obj3 == obj1)
         self.assertFalse(obj2 == obj1)
-        self.assertFalse(obj3 == obj2)
-        self.assertTrue(obj1 == obj3)
+        self.assertTrue(obj3 == obj2)
+        self.assertFalse(obj1 == obj3)
+
+        String = _pyjava.getclass('java/lang/String')
+        # These shouldn't raise
+        self.assertFalse(obj1 == String)
+        self.assertFalse(obj2 == String)
 
 
 class Test_call(unittest.TestCase):

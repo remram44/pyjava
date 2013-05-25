@@ -5,6 +5,9 @@
 #include "pyjava.h"
 
 
+PyObject *javawrapper_compare(PyObject *o1, PyObject *o2, int op);
+
+
 static java_Method *find_matching_overload(java_Methods *overloads,
         PyObject *args, size_t *nonmatchs, int what)
 {
@@ -120,8 +123,8 @@ PyObject *_method_call(java_Methods *overloads, int bound,
     {
         PyErr_Format(
                 Err_NoMatchingOverload,
-                    "%zu methods with %zd parameters (no match)",
-                    nonmatchs, nbargs);
+                "%zu methods with %zd parameters (no match)",
+                nonmatchs, nbargs);
     }
     return ret;
 }
@@ -405,7 +408,7 @@ static void JavaInstance_dealloc(PyObject *v_self)
     self->ob_type->tp_free(self);
 }
 
-static PyTypeObject JavaInstance_type = {
+PyTypeObject JavaInstance_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
     "pyjava.JavaInstance",     /*tp_name*/
@@ -420,7 +423,7 @@ static PyTypeObject JavaInstance_type = {
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
+    PyObject_HashNotImplemented, /*tp_hash */
     0,                         /*tp_call*/
     0,                         /*tp_str*/
     JavaInstance_getattr,      /*tp_getattro*/
@@ -430,7 +433,7 @@ static PyTypeObject JavaInstance_type = {
     "Java object wrapper",     /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
-    0,                         /*tp_richcompare*/
+    javawrapper_compare,       /*tp_richcompare*/
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
@@ -601,7 +604,7 @@ static void JavaClass_dealloc(PyObject *v_self)
     self->ob_type->tp_free(self);
 }
 
-static PyTypeObject JavaClass_type = {
+PyTypeObject JavaClass_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
     "pyjava.JavaClass",        /*tp_name*/
@@ -616,7 +619,7 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
+    PyObject_HashNotImplemented, /*tp_hash */
     JavaClass_create,          /*tp_call*/
     0,                         /*tp_str*/
     JavaClass_getattr,         /*tp_getattro*/
@@ -627,7 +630,7 @@ static PyTypeObject JavaClass_type = {
     "Java class wrapper",      /*tp_doc*/
     0,                         /*tp_traverse*/
     0,                         /*tp_clear*/
-    0,                         /*tp_richcompare*/
+    javawrapper_compare,       /*tp_richcompare*/
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
@@ -643,6 +646,82 @@ static PyTypeObject JavaClass_type = {
     0,                         /*tp_alloc*/
     PyType_GenericNew,         /*tp_new*/
 };
+
+
+/*==============================================================================
+ * JavaClass and JavaInstance comparison
+ */
+
+static int get_compared_object(PyObject *o, jobject *j)
+{
+    int check;
+
+    check = PyObject_IsInstance(o, (PyObject*)&JavaInstance_type);
+    if(check == -1)
+        return -1;
+    else if(check)
+    {
+        *j = ((JavaInstance*)o)->javaobject;
+        return 1;
+    }
+
+    check = PyObject_IsInstance(o, (PyObject*)&JavaClass_type);
+    if(check == -1)
+        return -1;
+    else if(check)
+    {
+        *j = ((JavaClass*)o)->javaclass;
+        return 1;
+    }
+
+    return 0;
+}
+
+PyObject *javawrapper_compare(PyObject *o1, PyObject *o2, int op)
+{
+    int expectation;
+    if(op == Py_EQ)
+        expectation = 1;
+    else if(op == Py_NE)
+        expectation = 0;
+    else
+    {
+        PyErr_SetString(
+                PyExc_TypeError,
+                "JavaInstance only supports == and !=");
+        return NULL;
+    }
+
+    {
+        jobject inst1, inst2;
+        int cv1, cv2;
+
+        cv1 = get_compared_object(o1, &inst1);
+        if(cv1 == -1)
+            return NULL;
+        cv2 = get_compared_object(o2, &inst2);
+        if(cv2 == -1)
+            return NULL;
+
+        if(!cv1 || !cv2)
+        {
+            Py_INCREF(Py_False);
+            return Py_False;
+        }
+
+        int cmp = (*penv)->IsSameObject(penv, inst1, inst2)?1:0;
+        if(cmp == expectation)
+        {
+            Py_INCREF(Py_True);
+            return Py_True;
+        }
+        else
+        {
+            Py_INCREF(Py_False);
+            return Py_False;
+        }
+    }
+}
 
 
 /*==============================================================================
