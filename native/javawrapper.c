@@ -698,6 +698,15 @@ int javawrapper_unwrap_instance(PyObject *pyobject,
             *javaclass = java_getclass(inst->javaobject);
         return 1;
     }
+    else if(PyObject_IsInstance(pyobject, (PyObject*)&JavaClass_type))
+    {
+        JavaClass *cls = (JavaClass*)pyobject;
+        if(javaobject != NULL)
+            *javaobject = cls->javaclass;
+        if(javaclass != NULL)
+            *javaclass = class_Class;
+        return 1;
+    }
     return 0;
 }
 
