@@ -7,9 +7,9 @@ similar to [JPype] [1].
 
 It is a C extension that uses JNI to access a Java virtual machine, meaning
 that it can be used anywhere Python is available. It is not a different
-interpreter like [Jython] [2] and does not require anything. The JVM dynamic
-library is load dynamically through pyjava.start() (some basic logic for
-locating this library on major platforms will be provided).
+interpreter like [Jython] [2] and does not require anything, other than a JRE.
+The JVM dynamic library is load dynamically through pyjava.start() (some basic
+logic for locating this library on major platforms will be provided).
 
 The integration with Java code is meant to be as complete as possible, allowing
 to use Java and Python objects seemlessly and converting objects back and forth
