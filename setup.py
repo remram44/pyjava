@@ -3,7 +3,6 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 import os
-import platform
 import re
 import sys
 
@@ -16,13 +15,13 @@ else:
     bits = 64
 
 
-USING_WINDOWS = platform.system() in ['Windows', 'Microsoft']
+USING_WINDOWS = sys.platform == 'win32'
 
 
 # Attempt to find the location of the JDK
 java_home = os.getenv('JAVA_HOME')
 if java_home:
-    sys.stderr.write("Using JDK from JAVA_HOME environment variable")
+    sys.stderr.write("Using JDK from JAVA_HOME environment variable\n")
 elif USING_WINDOWS:
     JDK_NAME = re.compile(r'^jdk1\.([0-9])\.([0-9])_([0-9]+)$')
 
