@@ -10,7 +10,7 @@ if not top_level in sys.path:
 
 
 import _pyjava
-from tests.find_dll import find_dll
+from pyjava.find_dll import find_dll
 
 
 dll = find_dll()
@@ -19,7 +19,7 @@ if not dll:
                      "environment variable.\n")
     sys.exit(1)
 else:
-    sys.stderr.write("Using JVM DLL: %s\n" % dll)
+    sys.stderr.write("Running tests with JVM DLL: %s\n" % dll)
 
 
 # This need to be called once, before running the test suite
