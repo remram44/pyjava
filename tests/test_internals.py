@@ -185,8 +185,10 @@ class Test_set_field(unittest.TestCase):
     def test_staticfield(self):
         """Sets a static field.
         """
-        # TODO
-        self.fail("Not implemented")
+        SetField = _pyjava.getclass('pyjavatest/test_fields/SetField')
+        SetField.a = 4
+        SetField.b = u"hello"
+        self.assertEqual((SetField.a, SetField.b), (4, u"hello"))
 
     def test_nonexistent_instance(self):
         """Sets an unknown field on an instance.
@@ -195,6 +197,16 @@ class Test_set_field(unittest.TestCase):
         d = Dimension()
         with self.assertRaises(AttributeError):
             d.nonExistentField = 42
+
+        SetField = _pyjava.getclass('pyjavatest/test_fields/SetField')
+        sf = SetField()
+        sf.c = 5
+        sf.d = u"r\xE9mi is out of ideas"
+        sf2 = SetField()
+        self.assertEqual(sf.c, 5)
+        self.assertEqual(sf2.c, 2)
+        self.assertEqual(len(sf.d), 20)
+        self.assertEqual(len(sf2.d), 22)
 
     def test_nonexistent_class(self):
         """Sets an unknown field on a class.
@@ -206,8 +218,16 @@ class Test_set_field(unittest.TestCase):
     def test_wrongtype(self):
         """Assigns values of different types to fields.
         """
-        # TODO
-        self.fail("Not implemented")
+        SetField = _pyjava.getclass('pyjavatest/test_fields/SetField')
+        sf = SetField()
+        with self.assertRaises(TypeError):
+            SetField.a = 6.87
+        with self.assertRaises(TypeError):
+            SetField.b = sf
+        with self.assertRaises(TypeError):
+            sf.c = u"test"
+        with self.assertRaises(TypeError):
+            sf.d = 1
 
 
 class Test_accessfield(unittest.TestCase):
