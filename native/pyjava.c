@@ -8,6 +8,7 @@
 PyObject *Err_Base;
 PyObject *Err_ClassNotFound;
 PyObject *Err_NoMatchingOverload;
+PyObject *Err_FieldTypeError;
 
 /**
  * _pyjava.start function: dynamically load a JVM DLL and start it.
@@ -130,12 +131,24 @@ PyMODINIT_FUNC init_pyjava(void)
     Py_INCREF(Err_ClassNotFound);
     PyModule_AddObject(mod, "ClassNotFound", Err_ClassNotFound);
 
-    bases = PyTuple_Pack(2, Err_Base, PyExc_TypeError);
-    Err_NoMatchingOverload = PyErr_NewException(
-            "pyjava.NoMatchingOverload", bases, NULL);
-    Py_INCREF(Err_NoMatchingOverload);
-    PyModule_AddObject(mod, "NoMatchingOverload", Err_NoMatchingOverload);
-    Py_DECREF(bases);
+    {
+        PyObject *bases = PyTuple_Pack(2, Err_Base, PyExc_TypeError);
+        Err_NoMatchingOverload = PyErr_NewException(
+                "pyjava.NoMatchingOverload", bases, NULL);
+        Py_INCREF(Err_NoMatchingOverload);
+        PyModule_AddObject(mod, "NoMatchingOverload", Err_NoMatchingOverload);
+        Py_DECREF(bases);
+    }
+
+    {
+        PyObject *bases = PyTuple_Pack(3, Err_Base,
+                                       PyExc_TypeError, PyExc_AttributeError);
+        Err_FieldTypeError = PyErr_NewException(
+                "pyjava.NoMatchingOverload", bases, NULL);
+        Py_INCREF(Err_FieldTypeError);
+        PyModule_AddObject(mod, "FieldTypeError", Err_FieldTypeError);
+        Py_DECREF(bases);
+    }
 
     javawrapper_init(mod);
 }

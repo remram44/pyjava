@@ -488,23 +488,31 @@ static int JavaInstance_setattr(PyObject *v_self, PyObject *attr_name,
 {
     JavaInstance *self = (JavaInstance*)v_self;
     jclass javaclass;
+    int res;
     const char *name = PyString_AsString(attr_name); /* UTF-8 */
     if(name == NULL)
         return -1; /* TypeError from PyString_AsString() */
     javaclass = java_getclass(self->javaobject);
 
-    if(convert_setjavafield(javaclass, self->javaobject, name, FIELD_NONSTATIC,
-                            value))
+    res = convert_setjavafield(javaclass, self->javaobject, name,
+                               FIELD_NONSTATIC, value);
+    if(res == 1)
     {
         (*penv)->DeleteLocalRef(penv, javaclass);
         return 0;
     }
     else
     {
-        PyErr_Format(
-                PyExc_AttributeError,
-                "Java class has no nonstatic attribute %s",
-                name);
+        if(res == 0)
+            PyErr_Format(
+                    Err_FieldTypeError,
+                    "Java nonstatic attribute %s has incompatible type",
+                    name);
+        else /* res == -1 */
+            PyErr_Format(
+                    PyExc_AttributeError,
+                    "Java class has no nonstatic attribute %s",
+                    name);
         (*penv)->DeleteLocalRef(penv, javaclass);
         return -1;
     }
@@ -711,18 +719,27 @@ static int JavaClass_setattr(PyObject *v_self, PyObject *attr_name,
         PyObject *value)
 {
     JavaClass *self = (JavaClass*)v_self;
+    int res;
     const char *name = PyString_AsString(attr_name); /* UTF-8 */
     if(name == NULL)
         return -1; /* TypeError from PyString_AsString() */
 
-    if(convert_setjavafield(self->javaclass, NULL, name, FIELD_STATIC, value))
+    res = convert_setjavafield(self->javaclass, NULL, name,
+                               FIELD_STATIC, value);
+    if(res == 1)
         return 0;
     else
     {
-        PyErr_Format(
-                PyExc_AttributeError,
-                "Java class has no static attribute %s",
-                name);
+        if(res == 0)
+            PyErr_Format(
+                    Err_FieldTypeError,
+                    "Java static attribute %s has incompatible type",
+                    name);
+        else /* res == -1 */
+            PyErr_Format(
+                    PyExc_AttributeError,
+                    "Java class has no static attribute %s",
+                    name);
         return -1;
     }
 }

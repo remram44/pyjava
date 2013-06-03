@@ -73,8 +73,8 @@ PyObject *convert_getjavafield(jclass javaclass, jobject object,
  * and the Python object, and sets it using the correct Get<type>Field()
  * function.
  *
- * If there is no field by that name, or if the type doesn't match, returns
- * 0 (doesn't set an exception). Else, returns 1.
+ * If the field can be set, returns 1, if not 0, and if there is no field by
+ * that name, returns -1.
  */
 int convert_setjavafield(jclass javaclass, jobject javaobject,
         const char *name, int type, PyObject *value);

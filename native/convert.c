@@ -910,7 +910,7 @@ int convert_setjavafield(jclass javaclass, jobject object,
     if(javafield == NULL)
     {
         (*penv)->ExceptionClear(penv);
-        return 0; /* no field with that name */
+        return -1; /* no field with that name */
     }
 
     modifiers = (*penv)->CallIntMethod(
