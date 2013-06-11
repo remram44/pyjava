@@ -116,7 +116,7 @@ static PyMethodDef methods[] = {
 
 PyMODINIT_FUNC init_pyjava(void)
 {
-    PyObject *mod, *bases;
+    PyObject *mod;
 
     mod = Py_InitModule("_pyjava", methods);
     if(mod == NULL)
