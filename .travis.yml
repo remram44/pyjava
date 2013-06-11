@@ -1,10 +1,12 @@
 language: python
 python:
+  - "2.6"
   - "2.7"
 before_install:
  - sudo apt-get update -qq
  - sudo apt-get install -qq openjdk-6-jdk openjdk-6-jre
-script: python setup.py develop && python tests
+ - pip install unittest2
+script: python setup.py develop && nosetests
 notifications:
   email:
     recipients:

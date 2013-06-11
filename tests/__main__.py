@@ -9,23 +9,6 @@ if not top_level in sys.path:
     sys.path.insert(0, top_level)
 
 
-import _pyjava
-from pyjava.find_dll import find_dll
-
-
-dll = find_dll()
-if not dll:
-    sys.stderr.write("No suitable JVM DLL found. Please set your JAVA_HOME "
-                     "environment variable.\n")
-    sys.exit(1)
-else:
-    sys.stderr.write("Running tests with JVM DLL: %s\n" % dll)
-
-
-# This need to be called once, before running the test suite
-_pyjava.start(dll, ['-Djava.class.path=tests/java-tests.jar'])
-
-
 class Program(unittest.TestProgram):
     def createTests(self):
         # Is there really no way to load the tests from the package, using

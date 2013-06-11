@@ -7,12 +7,13 @@ the pyjava Python interface, the package is covered by tests.
 
 
 import math
-import unittest
 
 import _pyjava
 
+from base import PyjavaTestCase
 
-class Test_getclass(unittest.TestCase):
+
+class Test_getclass(PyjavaTestCase):
     def test_nonexistent(self):
         """Tests that ClassNotFound is raised when getting an unknown class.
 
@@ -41,7 +42,7 @@ class Test_getclass(unittest.TestCase):
         self.assertIsInstance(Reader, _pyjava.JavaClass)
 
 
-class Test_get_method(unittest.TestCase):
+class Test_get_method(PyjavaTestCase):
     def test_method(self):
         """Requests a well-known method.
         """
@@ -99,7 +100,7 @@ class Test_get_method(unittest.TestCase):
         self.assertFalse(obj2 == String)
 
 
-class Test_call(unittest.TestCase):
+class Test_call(PyjavaTestCase):
     def test_constructor(self):
         """Constructs a Java object from a constructor.
         """
@@ -137,7 +138,7 @@ class Test_call(unittest.TestCase):
             sin()
 
 
-class Test_get_field(unittest.TestCase):
+class Test_get_field(PyjavaTestCase):
     def test_field(self):
         """Requests a well-known field.
         """
@@ -173,7 +174,7 @@ class Test_get_field(unittest.TestCase):
             Math.nonExistentField
 
 
-class Test_set_field(unittest.TestCase):
+class Test_set_field(PyjavaTestCase):
     def test_field(self):
         """Sets a well-known field.
         """
@@ -230,7 +231,7 @@ class Test_set_field(unittest.TestCase):
             sf.d = 1
 
 
-class Test_accessfield(unittest.TestCase):
+class Test_accessfield(PyjavaTestCase):
     def test_staticfield(self):
         """Requests a well-known static field.
         """
@@ -255,7 +256,7 @@ class Test_accessfield(unittest.TestCase):
         self.assertEqual(obj.f, '4')
 
 
-class Test_reflection(unittest.TestCase):
+class Test_reflection(PyjavaTestCase):
     def test_forname(self):
         """Uses Class.forName().
         """
@@ -280,7 +281,7 @@ class Test_reflection(unittest.TestCase):
         self.assertEqual(Class.getName(String), u'java.lang.String')
 
 
-class Test_conversions(unittest.TestCase):
+class Test_conversions(PyjavaTestCase):
     """Big set of method calls to cover the conversions.
     """
     def setUp(self):
