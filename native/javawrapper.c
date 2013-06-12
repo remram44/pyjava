@@ -637,11 +637,10 @@ static PyObject *JavaClass_create(PyObject *v_self,
     }
 
     {
-        JavaInstance *inst;
-
-        inst = PyObject_New(JavaInstance, &JavaInstance_type);
+        JavaInstance *inst = (JavaInstance*)PyObject_CallObject(
+                (PyObject*)&JavaInstance_type,
+                NULL);
         inst->javaobject = (*penv)->NewGlobalRef(penv, javaobject);
-
         return (PyObject*)inst;
     }
 }
@@ -914,7 +913,9 @@ void javawrapper_init(PyObject *mod)
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
 {
-    JavaClass *wrapper = PyObject_New(JavaClass, &JavaClass_type);
+    JavaClass *wrapper = (JavaClass*)PyObject_CallObject(
+            (PyObject*)&JavaClass_type,
+            NULL);
     wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
     wrapper->constructors = java_list_constructors(javaclass);
 
@@ -952,7 +953,9 @@ PyObject *javawrapper_wrap_instance(jobject javaobject)
         return javawrapper_wrap_class(javaobject);
     else
     {
-        JavaInstance *inst = PyObject_New(JavaInstance, &JavaInstance_type);
+        JavaInstance *inst = (JavaInstance*)PyObject_CallObject(
+                (PyObject*)&JavaInstance_type,
+                NULL);
         inst->javaobject = (*penv)->NewGlobalRef(penv, javaobject);
         return (PyObject*)inst;
     }
