@@ -86,7 +86,9 @@ if not USING_WINDOWS:
 pyjava = Extension('_pyjava',
                    sources=sources,
                    include_dirs=include_dirs,
-                   libraries=libraries)
+                   libraries=libraries,
+                   extra_compile_args=['-g'],
+                   extra_link_args=['-g'])
 
 description = """
 PyJava is a bridge allowing to use Java classes in regular Python code.
