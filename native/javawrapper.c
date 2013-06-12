@@ -891,7 +891,6 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaInstance_type);
     PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 
-    JavaClass_type.tp_base = &JavaInstance_type;
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
