@@ -586,6 +586,15 @@ typedef struct _S_JavaClass {
     java_Methods *constructors;
 } JavaClass;
 
+static PyObject *JavaClass_new(PyTypeObject *subtype,
+        PyObject *args, PyObject *kwds)
+{
+    PyErr_SetString(
+            PyExc_NotImplementedError,
+                "Subclassing Java classes is not supported");
+    return NULL;
+}
+
 static PyObject *JavaClass_create(PyObject *v_self,
         PyObject *args, PyObject *kwargs)
 {
@@ -795,7 +804,7 @@ PyTypeObject JavaClass_type = {
     0,                         /*tp_dictoffset*/
     0,                         /*tp_init*/
     0,                         /*tp_alloc*/
-    PyType_GenericNew,         /*tp_new*/
+    JavaClass_new,             /*tp_new*/
 };
 
 
@@ -924,10 +933,13 @@ PyObject *javawrapper_wrap_class(jclass javaclass)
                 name, name_len, &PyBaseObject_Type);
     }
 
-    wrapper = (JavaClass*)PyObject_CallObject(
-            (PyObject*)&JavaClass_type,
-            cstr_args);
-    Py_DECREF(cstr_args);
+    {
+        PyObject *obj = PyType_Type.tp_new(&JavaClass_type, cstr_args, NULL);
+        if(PyType_Type.tp_init != NULL)
+            PyType_Type.tp_init(obj, cstr_args, NULL);
+        Py_DECREF(cstr_args);
+        wrapper = (JavaClass*)obj;
+    }
 
     wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
     wrapper->constructors = java_list_constructors(javaclass);
