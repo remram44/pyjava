@@ -580,7 +580,7 @@ PyTypeObject JavaInstance_type = {
  */
 
 typedef struct _S_JavaClass {
-    PyObject_HEAD
+    PyTypeObject pytype;
     jobject javaclass;
     /* the struct until here is the same as JavaInstance, as we inherit! */
     java_Methods *constructors;
@@ -752,7 +752,7 @@ static void JavaClass_dealloc(PyObject *v_self)
     if(self->javaclass != NULL)
         (*penv)->DeleteGlobalRef(penv, self->javaclass);
 
-    self->ob_type->tp_free(self);
+    PyType_Type.tp_free((PyObject*)self);
 }
 
 PyTypeObject JavaClass_type = {
@@ -890,6 +890,7 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaInstance_type);
     PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 
+    JavaClass_type.tp_base = &PyType_Type;
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
@@ -913,9 +914,21 @@ void javawrapper_init(PyObject *mod)
 
 PyObject *javawrapper_wrap_class(jclass javaclass)
 {
-    JavaClass *wrapper = (JavaClass*)PyObject_CallObject(
+    JavaClass *wrapper;
+    PyObject *cstr_args;
+    {
+        size_t name_len;
+        const char *name = java_getclassname(javaclass, &name_len);
+        cstr_args = Py_BuildValue(
+                "(s#(O){})",
+                name, name_len, &PyBaseObject_Type);
+    }
+
+    wrapper = (JavaClass*)PyObject_CallObject(
             (PyObject*)&JavaClass_type,
-            NULL);
+            cstr_args);
+    Py_DECREF(cstr_args);
+
     wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
     wrapper->constructors = java_list_constructors(javaclass);
 

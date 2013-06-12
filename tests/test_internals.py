@@ -42,22 +42,14 @@ class Test_getclass(PyjavaTestCase):
         self.assertIsInstance(Reader, _pyjava.JavaClass)
 
 
-class Test_get_method(PyjavaTestCase):
-    def test_method(self):
-        """Requests a well-known method.
+class Test_classobject(PyjavaTestCase):
+    def test_subclass(self):
+        """Tests subclassing a Java class.
         """
         String = _pyjava.getclass('java/lang/String')
-        length = String.length
-        self.assertIsNotNone(length)
-        self.assertTrue(isinstance(length, _pyjava.UnboundMethod))
-
-    def test_staticmethod(self):
-        """Requests a well-known static method.
-        """
-        Math = _pyjava.getclass('java/lang/Math')
-        sin = Math.sin
-        self.assertIsNotNone(sin)
-        self.assertTrue(isinstance(sin, _pyjava.UnboundMethod))
+        with self.assertRaises(NotImplementedError):
+            class MyString(String):
+                pass
 
     def test_issubclass(self):
         """Requests well-known classes and tests issubclass().
@@ -98,6 +90,24 @@ class Test_get_method(PyjavaTestCase):
         # These shouldn't raise
         self.assertFalse(obj1 == String)
         self.assertFalse(obj2 == String)
+
+
+class Test_get_method(PyjavaTestCase):
+    def test_method(self):
+        """Requests a well-known method.
+        """
+        String = _pyjava.getclass('java/lang/String')
+        length = String.length
+        self.assertIsNotNone(length)
+        self.assertTrue(isinstance(length, _pyjava.UnboundMethod))
+
+    def test_staticmethod(self):
+        """Requests a well-known static method.
+        """
+        Math = _pyjava.getclass('java/lang/Math')
+        sin = Math.sin
+        self.assertIsNotNone(sin)
+        self.assertTrue(isinstance(sin, _pyjava.UnboundMethod))
 
 
 class Test_call(PyjavaTestCase):
