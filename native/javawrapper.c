@@ -994,20 +994,23 @@ void javawrapper_init(PyObject *mod)
 PyObject *javawrapper_wrap_class(jclass javaclass)
 {
     JavaClass *wrapper;
-    PyObject *cstr_args;
+    PyObject *cstr_args, *cstr_kwargs;
     {
         size_t name_len;
         const char *name = java_getclassname(javaclass, &name_len);
         cstr_args = Py_BuildValue(
                 "(s#(O){})",
                 name, name_len, &PyBaseObject_Type);
+        cstr_kwargs = Py_BuildValue("{}");
     }
 
     {
-        PyObject *obj = PyType_Type.tp_new(&JavaClass_type, cstr_args, NULL);
+        PyObject *obj = PyType_Type.tp_new(&JavaClass_type,
+                                           cstr_args, cstr_kwargs);
         if(PyType_Type.tp_init != NULL)
-            PyType_Type.tp_init(obj, cstr_args, NULL);
+            PyType_Type.tp_init(obj, cstr_args, cstr_kwargs);
         Py_DECREF(cstr_args);
+        Py_DECREF(cstr_kwargs);
         wrapper = (JavaClass*)obj;
     }
 
