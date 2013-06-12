@@ -67,6 +67,21 @@ class Test_classobject(PyjavaTestCase):
         self.assertTrue(issubclass(String, Object))
         self.assertFalse(issubclass(Object, Class))
 
+        self.assertFalse(issubclass(String, list))
+        self.assertFalse(issubclass(int, Class))
+
+    def test_isinstance(self):
+        """Requests well-known classes and tests isinstance().
+        """
+        Collections = _pyjava.getclass('java/util/Collections')
+        List = _pyjava.getclass('java/util/List')
+        Integer = _pyjava.getclass('java/lang/Integer')
+        empty = Collections.emptyList()
+        self.assertTrue(isinstance(empty, List))
+        self.assertFalse(isinstance(empty, Integer))
+        self.assertFalse(isinstance(2, List))
+        self.assertFalse(isinstance(empty, list))
+
     def test_is_same_object(self):
         """Tests for equality of references.
         """

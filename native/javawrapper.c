@@ -72,7 +72,7 @@ static java_Method *find_matching_overload(java_Methods *overloads,
 }
 
 
-PyObject *_method_call(java_Methods *overloads, int bound,
+static PyObject *_method_call(java_Methods *overloads, int bound,
         jclass javaclass, PyObject *args, int what)
 {
     size_t nbargs = PyTuple_Size(args);
@@ -579,6 +579,8 @@ PyTypeObject JavaInstance_type = {
  * either static fields or unbound methods (static or not).
  */
 
+extern PyTypeObject JavaClass_type;
+
 typedef struct _S_JavaClass {
     PyTypeObject pytype;
     jobject javaclass;
@@ -764,6 +766,74 @@ static void JavaClass_dealloc(PyObject *v_self)
     PyType_Type.tp_free((PyObject*)self);
 }
 
+static PyObject *JavaClass_subclasscheck(JavaClass *self, PyObject *args)
+{
+    PyObject *obj;
+    JavaClass *other;
+    if(!PyArg_ParseTuple(args, "O!", &PyType_Type, &obj))
+        return NULL;
+
+    if(!PyObject_IsInstance(obj, (PyObject*)&JavaClass_type))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+    other = (JavaClass*)obj;
+
+    if(java_is_subclass(other->javaclass, self->javaclass))
+    {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+}
+
+static PyObject *JavaClass_instancecheck(JavaClass *self, PyObject *args)
+{
+    PyObject *obj;
+    JavaInstance *inst;
+    jclass instclass;
+    int res;
+    if(!PyArg_ParseTuple(args, "O", &obj))
+        return NULL;
+
+    if(!PyObject_IsInstance(obj, (PyObject*)&JavaInstance_type))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+    inst = (JavaInstance*)obj;
+
+    instclass = java_getclass(inst->javaobject);
+    res = java_is_subclass(instclass, self->javaclass);
+    (*penv)->DeleteLocalRef(penv, instclass);
+
+    if(res)
+    {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+}
+
+static PyMethodDef JavaClass_methods[] = {
+    {"__subclasscheck__", (PyCFunction)JavaClass_subclasscheck, METH_VARARGS,
+    "__subclasscheck__(obj) -> bool"
+    },
+    {"__instancecheck__", (PyCFunction)JavaClass_instancecheck, METH_VARARGS,
+    "__instancecheck__(obj) -> bool"
+    },
+    {NULL}  /* Sentinel */
+};
+
 PyTypeObject JavaClass_type = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -794,7 +864,7 @@ PyTypeObject JavaClass_type = {
     0,                         /*tp_weaklistoffset*/
     0,                         /*tp_iter*/
     0,                         /*tp_iternext*/
-    0,                         /*tp_methods*/
+    JavaClass_methods,         /*tp_methods*/
     0,                         /*tp_members*/
     0,                         /*tp_getset*/
     0,                         /*tp_base*/
