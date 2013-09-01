@@ -175,7 +175,10 @@ class Test_get_field(PyjavaTestCase):
         """Requests a well-known static field.
         """
         Collections = _pyjava.getclass('java/util/Collections')
+        import sys
+        sys.stderr.write("++++ START OF CALL\n")
         empty_list = Collections.EMPTY_LIST
+        sys.stderr.write("---- END OF CALL\n")
         self.assertIsNotNone(empty_list)
         self.assertEqual(empty_list.size(), 0)
 
