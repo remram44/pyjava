@@ -9,7 +9,7 @@ PyObject *javawrapper_compare(PyObject *o1, PyObject *o2, int op);
 
 
 static java_Method *find_matching_overload(java_Methods *overloads,
-        PyObject *args, size_t *nonmatchs, int what)
+        PyObject *args, size_t *nonmatches, int what)
 {
     size_t nbargs;
     size_t i;
@@ -17,7 +17,7 @@ static java_Method *find_matching_overload(java_Methods *overloads,
     int nb_matches = 1;
 
     nbargs = PyTuple_Size(args);
-    *nonmatchs = 0;
+    *nonmatches = 0;
 
     for(i = 0; i < overloads->nb_methods; ++i)
     {
@@ -51,7 +51,7 @@ static java_Method *find_matching_overload(java_Methods *overloads,
                 nb_matches++;
         }
         else
-            (*nonmatchs)++;
+            (*nonmatches)++;
     }
 
     /*
@@ -79,9 +79,9 @@ static PyObject *_method_call(java_Methods *overloads, int bound,
     PyObject *ret = NULL;
     jvalue *java_parameters;
 
-    size_t nonmatchs;
+    size_t nonmatches;
     java_Method *matching_method = find_matching_overload(overloads,
-            args, &nonmatchs, what);
+            args, &nonmatches, what);
 
     /* If bound, we can only call non-static methods. This happens in
      * BoundMethod_call and ClassMethod_call.
@@ -95,7 +95,7 @@ static PyObject *_method_call(java_Methods *overloads, int bound,
         PyErr_Format(
                 Err_NoMatchingOverload,
                 "%zu methods with %zd parameters (no match)",
-                nonmatchs, nbargs);
+                nonmatches, nbargs);
         return NULL;
     }
 
@@ -131,7 +131,7 @@ static PyObject *_method_call(java_Methods *overloads, int bound,
         PyErr_Format(
                 Err_NoMatchingOverload,
                 "%zu methods with %zd parameters (no match)",
-                nonmatchs, nbargs);
+                nonmatches, nbargs);
     }
     return ret;
 }
@@ -603,7 +603,7 @@ static PyObject *JavaClass_create(PyObject *v_self,
     JavaClass *self = (JavaClass*)v_self;
     jobject javaobject;
     size_t nbargs;
-    size_t nonmatchs;
+    size_t nonmatches;
     size_t i;
 
     java_Method *matching_method;
@@ -617,7 +617,7 @@ static PyObject *JavaClass_create(PyObject *v_self,
     }
 
     matching_method = find_matching_overload(self->constructors,
-            args, &nonmatchs, FIELD_STATIC);
+            args, &nonmatches, FIELD_STATIC);
 
     nbargs = PyTuple_Size(args);
 
@@ -626,7 +626,7 @@ static PyObject *JavaClass_create(PyObject *v_self,
         PyErr_Format(
                 Err_NoMatchingOverload,
                 "%zu constructors with %zd parameters (no match)",
-                nonmatchs, nbargs);
+                nonmatches, nbargs);
         return NULL;
     }
 
