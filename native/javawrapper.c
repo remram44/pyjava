@@ -761,7 +761,10 @@ static void JavaClass_dealloc(PyObject *v_self)
     if(self->constructors != NULL)
         java_free_methods(self->constructors);
     if(self->javaclass != NULL)
+    {
         (*penv)->DeleteGlobalRef(penv, self->javaclass);
+        self->javaclass = NULL;
+    }
 
     PyType_Type.tp_free((PyObject*)self);
 }
