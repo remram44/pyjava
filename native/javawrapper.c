@@ -26,8 +26,8 @@ static java_Method *find_matching_overload(java_Methods *overloads,
         char matches = 1;
         java_Method *m = &overloads->methods[i];
 
-        if( (m->is_static && !(what && FIELD_STATIC))
-         || (!m->is_static && !(what && FIELD_NONSTATIC)) )
+        if( (m->is_static && !(what & FIELD_STATIC))
+         || (!m->is_static && !(what & FIELD_NONSTATIC)) )
             continue;
         if(m->nb_args != nbargs)
             continue;
@@ -322,7 +322,7 @@ static PyTypeObject BoundMethod_type = {
  * This represents a Class method obtained from a JavaClass.
  * If the class is Java's Class, 'overloads' contains static methods that we
  * don't want to be bound to the class object, but if a non-static method is
- * call, we want it to be bound to the class object. It contains the jclass,
+ * called, we want it to be bound to the class object. It contains the jclass,
  * the jobject, and the name of the method.
  * There is no jmethodID here because this object wraps all the Java methods
  * with the same name, and the actual decision will occur when the call is
