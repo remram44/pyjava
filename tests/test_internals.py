@@ -143,8 +143,11 @@ class Test_call(PyjavaTestCase):
         emptyList = Collections.emptyList
         li = emptyList()
         size = List.size
+        self.assertTrue(isinstance(size, _pyjava.UnboundMethod))
+        b_size = li.size
+        self.assertTrue(isinstance(b_size, _pyjava.BoundMethod))
         self.assertEqual(size(li), 0)
-        self.assertEqual(li.size(), 0)
+        self.assertEqual(b_size(), 0)
 
     def test_staticmethod(self):
         """Calls a well-known static method.

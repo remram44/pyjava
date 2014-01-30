@@ -320,13 +320,13 @@ static PyTypeObject BoundMethod_type = {
  * ClassMethod type.
  *
  * This represents a Class method obtained from a JavaClass.
- * If the class is Java's Class, 'overloads' contains static methods that we
- * don't want to be bound to the class object, but if a non-static method is
- * called, we want it to be bound to the class object. It contains the jclass,
- * the jobject, and the name of the method.
+ * If the class is Java's Class, 'overloads' contains methods that are static
+ * or unbound. If a non-static method is called, we don't want it to be bound
+ * to Class but rather to use the first argument as 'self'.
+ * It contains the jclass, the jobject, and the name of the method.
  * There is no jmethodID here because this object wraps all the Java methods
- * with the same name, and the actual decision will occur when the call is
- * made (and the parameter types are known).
+ * with the same name, and the actual decision will occur when the call is made
+ * (and the parameter types are known).
  */
 
 typedef struct _S_ClassMethod {
@@ -356,14 +356,15 @@ static PyObject *ClassMethod_call(PyObject *v_self,
         /* Attempts bound method call */
         result = _method_call(self->overloads, 1, class_Class, b_args,
                               FIELD_NONSTATIC);
+        Py_DECREF(b_args);
         if(result != NULL)
             return result;
         PyErr_Clear();
     }
 
-    /* Attempts unbound method call (static only) */
+    /* Attempts unbound method call */
     return _method_call(self->overloads, 0, self->javaclass, args,
-                        FIELD_STATIC);
+                        FIELD_BOTH);
 }
 
 static void ClassMethod_dealloc(PyObject *v_self)
@@ -463,10 +464,10 @@ static PyObject *JavaInstance_getattr(PyObject *v_self, PyObject *attr_name)
         }
     }
 
-    /* Then, try a field (static or nonstatic) */
+    /* Then, try a field (nonstatic) */
     {
         PyObject *field = convert_getjavafield(javaclass, self->javaobject,
-                                               name, FIELD_BOTH);
+                                               name, FIELD_NONSTATIC);
         if(field != NULL)
         {
             (*penv)->DeleteLocalRef(penv, javaclass);
