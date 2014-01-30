@@ -582,19 +582,22 @@ PyTypeObject JavaInstance_type = {
 extern PyTypeObject JavaClass_type;
 
 typedef struct _S_JavaClass {
-    PyTypeObject pytype;
+    PyObject_HEAD
     jobject javaclass;
-    /* the struct until here is the same as JavaInstance, as we inherit! */
     java_Methods *constructors;
 } JavaClass;
 
-static PyObject *JavaClass_new(PyTypeObject *subtype,
+static PyObject *JavaClass_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds)
 {
-    PyErr_SetString(
-            PyExc_NotImplementedError,
+    if(PySequence_Length(args) != 0)
+    {
+        PyErr_SetString(
+                PyExc_NotImplementedError,
                 "Subclassing Java classes is not supported");
-    return NULL;
+        return NULL;
+    }
+    return type->tp_alloc(type, 0);
 }
 
 static PyObject *JavaClass_create(PyObject *v_self,
@@ -766,14 +769,14 @@ static void JavaClass_dealloc(PyObject *v_self)
         self->javaclass = NULL;
     }
 
-    PyType_Type.tp_free((PyObject*)self);
+    self->ob_type->tp_free(self);
 }
 
 static PyObject *JavaClass_subclasscheck(JavaClass *self, PyObject *args)
 {
     PyObject *obj;
     JavaClass *other;
-    if(!PyArg_ParseTuple(args, "O!", &PyType_Type, &obj))
+    if(!PyArg_ParseTuple(args, "O", &obj))
         return NULL;
 
     if(!PyObject_IsInstance(obj, (PyObject*)&JavaClass_type))
@@ -972,7 +975,6 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaInstance_type);
     PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 
-    JavaClass_type.tp_base = &PyType_Type;
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
@@ -997,22 +999,11 @@ void javawrapper_init(PyObject *mod)
 PyObject *javawrapper_wrap_class(jclass javaclass)
 {
     JavaClass *wrapper;
-    PyObject *cstr_args;
-    {
-        size_t name_len;
-        const char *name = java_getclassname(javaclass, &name_len);
-        cstr_args = Py_BuildValue(
-                "(s#(O){})",
-                name, name_len, &PyBaseObject_Type);
-    }
+    PyObject *cstr_args = Py_BuildValue("()");
 
-    {
-        PyObject *obj = PyType_Type.tp_new(&JavaClass_type, cstr_args, NULL);
-        if(PyType_Type.tp_init != NULL)
-            PyType_Type.tp_init(obj, cstr_args, NULL);
-        Py_DECREF(cstr_args);
-        wrapper = (JavaClass*)obj;
-    }
+    wrapper = (JavaClass*)PyObject_CallObject((PyObject*)&JavaClass_type,
+                                              cstr_args);
+    Py_DECREF(cstr_args);
 
     wrapper->javaclass = (*penv)->NewGlobalRef(penv, javaclass);
     wrapper->constructors = java_list_constructors(javaclass);
@@ -1051,9 +1042,11 @@ PyObject *javawrapper_wrap_instance(jobject javaobject)
         return javawrapper_wrap_class(javaobject);
     else
     {
+        PyObject *cstr_args = Py_BuildValue("()");
         JavaInstance *inst = (JavaInstance*)PyObject_CallObject(
                 (PyObject*)&JavaInstance_type,
-                NULL);
+                cstr_args);
+        Py_DECREF(cstr_args);
         inst->javaobject = (*penv)->NewGlobalRef(penv, javaobject);
         return (PyObject*)inst;
     }
