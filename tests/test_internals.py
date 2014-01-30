@@ -10,7 +10,7 @@ import math
 
 import _pyjava
 
-from base import PyjavaTestCase
+from base import PyjavaTestCase, unittest
 
 
 class Test_getclass(PyjavaTestCase):
@@ -51,6 +51,7 @@ class Test_classobject(PyjavaTestCase):
             class MyString(String):
                 pass
 
+    @unittest.skip("JavaClass is not a metaclass right now")
     def test_issubclass(self):
         """Requests well-known classes and tests issubclass().
         """
@@ -67,10 +68,10 @@ class Test_classobject(PyjavaTestCase):
         self.assertTrue(issubclass(String, Object))
         self.assertFalse(issubclass(Object, Class))
 
-        # FIXME : String is not a type, so this is not possible!
-        #self.assertFalse(issubclass(String, list))
+        self.assertFalse(issubclass(String, list))
         self.assertFalse(issubclass(int, Class))
 
+    @unittest.skip("JavaClass is not a metaclass right now")
     def test_isinstance(self):
         """Requests well-known classes and tests isinstance().
         """
