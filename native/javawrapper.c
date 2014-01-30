@@ -72,7 +72,7 @@ static java_Method *find_matching_overload(java_Methods *overloads,
 }
 
 
-static PyObject *_method_call(java_Methods *overloads, int bound,
+static PyObject *_method_call(java_Methods *overloads,
         jclass javaclass, PyObject *args, int what)
 {
     size_t nbargs = PyTuple_Size(args);
@@ -82,12 +82,6 @@ static PyObject *_method_call(java_Methods *overloads, int bound,
     size_t nonmatches;
     java_Method *matching_method = find_matching_overload(overloads,
             args, &nonmatches, what);
-
-    /* If bound, we can only call non-static methods. This happens in
-     * BoundMethod_call and ClassMethod_call.
-     * If unbound, we might want to call both (from UnboundMethod_call) or only
-     * static (from ClassMethod_call). */
-    assert(!bound || what == FIELD_NONSTATIC);
 
     if(matching_method == NULL)
     {
@@ -109,7 +103,7 @@ static PyObject *_method_call(java_Methods *overloads, int bound,
                     &java_parameters[i]);
     }
 
-    if(matching_method->is_static && !bound)
+    if(matching_method->is_static)
     {
         ret = convert_calljava_static(
                 javaclass, matching_method->id,
@@ -161,7 +155,7 @@ static PyObject *UnboundMethod_call(PyObject *v_self,
 {
     UnboundMethod *self = (UnboundMethod*)v_self;
 
-    return _method_call(self->overloads, 0, self->javaclass, args, FIELD_BOTH);
+    return _method_call(self->overloads, self->javaclass, args, FIELD_BOTH);
 }
 
 static void UnboundMethod_dealloc(PyObject *v_self)
@@ -255,7 +249,7 @@ static PyObject *BoundMethod_call(PyObject *v_self,
         Py_DECREF(first_arg);
     }
 
-    return _method_call(self->overloads, 1, self->javaclass, args,
+    return _method_call(self->overloads, self->javaclass, args,
                         FIELD_NONSTATIC);
 }
 
@@ -354,7 +348,7 @@ static PyObject *ClassMethod_call(PyObject *v_self,
         }
 
         /* Attempts bound method call */
-        result = _method_call(self->overloads, 1, class_Class, b_args,
+        result = _method_call(self->overloads, class_Class, b_args,
                               FIELD_NONSTATIC);
         Py_DECREF(b_args);
         if(result != NULL)
@@ -363,8 +357,7 @@ static PyObject *ClassMethod_call(PyObject *v_self,
     }
 
     /* Attempts unbound method call */
-    return _method_call(self->overloads, 0, self->javaclass, args,
-                        FIELD_BOTH);
+    return _method_call(self->overloads, self->javaclass, args, FIELD_BOTH);
 }
 
 static void ClassMethod_dealloc(PyObject *v_self)
