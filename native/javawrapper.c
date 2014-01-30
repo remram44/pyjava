@@ -576,14 +576,16 @@ PyTypeObject JavaInstance_type = {
 extern PyTypeObject JavaClass_type;
 
 typedef struct _S_JavaClass {
-    PyObject_HEAD
+    PyTypeObject pytype;
     jobject javaclass;
     java_Methods *constructors;
 } JavaClass;
 
 static PyObject *JavaClass_new(PyTypeObject *type,
-        PyObject *args, PyObject *kwds)
+        PyObject *args, PyObject *kwargs)
 {
+    PyObject *obj;
+    PyObject *cstr_args, *cstr_kwargs;
     if(PySequence_Length(args) != 0)
     {
         PyErr_SetString(
@@ -591,7 +593,22 @@ static PyObject *JavaClass_new(PyTypeObject *type,
                 "Subclassing Java classes is not supported");
         return NULL;
     }
-    return type->tp_alloc(type, 0);
+    cstr_args = Py_BuildValue(
+            "(s(O){})",
+            "java class obj", &PyBaseObject_Type);
+    cstr_kwargs = Py_BuildValue(
+            "{}");
+    obj = PyType_Type.tp_new(&JavaClass_type, cstr_args, cstr_kwargs);
+    Py_DECREF(cstr_args);
+    Py_DECREF(cstr_kwargs);
+    if(PyType_Type.tp_init != NULL)
+        PyType_Type.tp_init(obj, cstr_args, cstr_kwargs);
+    return obj;
+}
+
+static int JavaClass_init(JavaClass *self, PyObject *args, PyObject *kwargs)
+{
+    return 0;
 }
 
 static PyObject *JavaClass_create(PyObject *v_self,
@@ -756,14 +773,17 @@ static void JavaClass_dealloc(PyObject *v_self)
     JavaClass *self = (JavaClass*)v_self;
 
     if(self->constructors != NULL)
+    {
         java_free_methods(self->constructors);
+        self->constructors = NULL;
+    }
     if(self->javaclass != NULL)
     {
         (*penv)->DeleteGlobalRef(penv, self->javaclass);
         self->javaclass = NULL;
     }
 
-    self->ob_type->tp_free(self);
+    PyType_Type.tp_free((PyObject*)self);
 }
 
 static PyObject *JavaClass_subclasscheck(JavaClass *self, PyObject *args)
@@ -872,7 +892,7 @@ PyTypeObject JavaClass_type = {
     0,                         /*tp_descr_get*/
     0,                         /*tp_descr_set*/
     0,                         /*tp_dictoffset*/
-    0,                         /*tp_init*/
+    JavaClass_init,            /*tp_init*/
     0,                         /*tp_alloc*/
     JavaClass_new,             /*tp_new*/
 };
@@ -969,6 +989,7 @@ void javawrapper_init(PyObject *mod)
     Py_INCREF(&JavaInstance_type);
     PyModule_AddObject(mod, "JavaInstance", (PyObject*)&JavaInstance_type);
 
+    JavaClass_type.tp_base = &PyType_Type;
     if(PyType_Ready(&JavaClass_type) < 0)
         return;
     Py_INCREF(&JavaClass_type);
