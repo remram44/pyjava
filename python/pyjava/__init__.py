@@ -7,7 +7,10 @@ __all__ = [
         'start', 'getclass']
 
 
-def start(path, *args):
+def start(path=None, *args):
+    if path is None:
+        from pyjava.find_dll import find_dll
+        path = find_dll()
     try:
         if len(args) == 0:
             _pyjava.start(path, [])
